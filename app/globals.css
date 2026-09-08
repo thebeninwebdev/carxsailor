@@ -17,3 +17,7 @@
 @media(prefers-reduced-motion:reduce){.hero-image-layer,.hero-content-layer,.motion-cta-shell{transform:none!important}.story-heading{position:static!important}.text-reveal-line{transform:none!important}.reading-progress{display:none}.vehicle-motion-card:hover img{transform:none}.hero-visual .hero-shade{opacity:1}}
 .vehicle-selector button>span:nth-child(2){flex:initial}.vehicle-selector button>.featured-name{flex:1}.auth-slot{min-width:210px}@media(max-width:900px){.auth-slot{min-width:100px}}
 .section-copy{color:#55645b}.decision-intro .text-\[\#69756f\],.featured-car .text-\[\#69756f\],.faq-section .text-\[\#69756f\],.featured-details dt,.featured-details dd small{color:#56645c}
+
+.back-to-top{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 18px;border:1px solid #d7f25c;border-radius:999px;background:#19291f;color:#d7f25c;font-size:12px;font-weight:750;box-shadow:0 8px 28px #0002}.back-to-top svg{flex-shrink:0}@media(max-width:620px){.back-to-top{right:16px;bottom:calc(18px + env(safe-area-inset-bottom));width:48px;padding:0}.back-to-top span{display:none}}
+
+@media(prefers-reduced-motion:reduce){.back-to-top{transform:none!important}}
