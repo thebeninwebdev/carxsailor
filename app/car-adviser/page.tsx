@@ -1,0 +1,5 @@
+import type {Metadata} from "next";
+import {Adviser} from "@/components/adviser/adviser";
+import {GuidedAdviser} from "@/components/adviser/guided-adviser";
+export const metadata:Metadata={title:"Decision Support",description:"Set your budget and priorities, then compare explained recommendations from available cars."};
+export default async function Page({searchParams}:{searchParams:Promise<{resume?:string}>}){const {resume}=await searchParams;return <div className="bg-[#f1f2ec] py-14 sm:py-20"><div className="container"><div className="mx-auto mb-10 max-w-3xl text-center"><p className="eyebrow">Decision Support / Your personal car guide</p><h1 className="display mt-4 text-5xl sm:text-6xl">Find the right car for you.</h1><p className="mt-6 text-lg leading-8 text-[#68756f]">Your budget. Your must-haves. Your priorities. Turn them into a shortlist you can understand.</p></div><GuidedAdviser resume={resume==="1"}/><details className="mt-12"><summary className="mx-auto w-fit cursor-pointer p-4 font-bold">Prefer to describe what you need? Try free-text advice.</summary><div className="mt-6"><Adviser/></div></details></div></div>}

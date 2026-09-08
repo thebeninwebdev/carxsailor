@@ -1,0 +1,1 @@
+export default async function Page({params}:{params:Promise<{id:string}>}){const{id}=await params;return <form className="card grid gap-4 p-7"><h2 className="text-xl font-bold">Edit listing {id}</h2><p className="text-sm text-[#68756f]">Ownership is rechecked by the server on every save.</p><button className="btn btn-dark">Save changes</button></form>}

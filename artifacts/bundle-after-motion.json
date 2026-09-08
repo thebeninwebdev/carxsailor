@@ -1,0 +1,6 @@
+{
+  "scope": "All production client JavaScript assets, all routes; not initial route payload",
+  "files": 25,
+  "bytes": 1229225,
+  "gzipBytes": 373057
+}

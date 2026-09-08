@@ -1,0 +1,1 @@
+import Link from "next/link";export default async function Page({params}:{params:Promise<{id:string}>}){const{id}=await params;return <div className="card p-8"><p className="eyebrow">Listing {id}</p><h2 className="mt-2 text-2xl font-bold">Vehicle listing</h2><Link href={`/vendor/cars/${id}/edit`} className="btn btn-dark mt-5">Edit listing</Link></div>}

@@ -1,0 +1,6 @@
+import {NextResponse} from "next/server";
+import {getCurrentUser} from "@/lib/auth";
+import {preferenceSchema} from "@/lib/dss/preferences";
+import {recommend} from "@/lib/dss/recommend";
+import {AdviserSessionModel} from "@/models/AdviserSession";
+export async function POST(request:Request){const user=await getCurrentUser();if(!user)return NextResponse.json({error:"Sign in to save your decision."},{status:401});try{const body=await request.text();if(body.length>10000)return NextResponse.json({error:"Request too large"},{status:413});const parsed=preferenceSchema.safeParse(JSON.parse(body).preference);if(!parsed.success)return NextResponse.json({error:"Invalid preferences"},{status:422});const preference={...parsed.data,hardConstraints:[],missingInformation:[],clarificationRequired:false};const result=await recommend(preference);const saved=await AdviserSessionModel.findOneAndUpdate({userId:user.id,preference},{$set:{preference,status:"COMPLETED",recommendations:result.recommendations?.map(r=>({vehicleId:r.vehicleId,score:r.score}))??[]}},{upsert:true,new:true});return NextResponse.json({id:String(saved._id)})}catch{return NextResponse.json({error:"Could not save your decision. Try again."},{status:500})}}

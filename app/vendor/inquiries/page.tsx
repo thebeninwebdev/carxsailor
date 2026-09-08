@@ -1,0 +1,1 @@
+export default function Page(){return <div className="card p-8"><h2 className="text-xl font-bold">Buyer inquiries</h2><p className="mt-2 text-[#68756f]">New buyer requests will appear here without exposing private profile data publicly.</p></div>}

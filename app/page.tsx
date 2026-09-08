@@ -1,0 +1,9 @@
+import {ScrollProgress} from "@/components/motion/scroll-progress";
+import {listActiveVehicles,inventoryStats} from "@/lib/vehicles";
+import {Hero} from "@/components/home/hero";
+import {FeaturedCars} from "@/components/home/featured-cars";
+import {DecisionIntro,DecisionCriteria,DecisionProcess,Benefits} from "@/components/home/decision-sections";
+import {DecisionPreview} from "@/components/home/decision-preview";
+import {ComparisonShowcase,InventorySection,FAQ,FinalCTA} from "@/components/home/closing-sections";
+export const dynamic="force-dynamic";
+export default async function Home(){const [vehicles,stats]=await Promise.all([listActiveVehicles({},12),inventoryStats()]);const hero=vehicles.find(v=>v.make==="Mercedes-Benz")??vehicles[0];return <div className="editorial-home"><ScrollProgress/><Hero vehicle={hero}/><DecisionIntro/><FeaturedCars vehicles={vehicles.slice(0,4)}/><DecisionCriteria/><DecisionProcess/><DecisionPreview vehicles={vehicles}/><ComparisonShowcase vehicles={vehicles}/><Benefits/><InventorySection {...stats}/><FAQ/><FinalCTA vehicle={vehicles[1]??vehicles[0]}/></div>}

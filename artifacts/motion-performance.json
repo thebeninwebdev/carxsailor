@@ -1,0 +1,15 @@
+{
+  "environment": "http://localhost:3002",
+  "cpuThrottle": 4,
+  "viewport": "390x844",
+  "observedCLS": 0,
+  "frameSample": {
+    "frames": 90,
+    "over50ms": 0,
+    "maxMs": 50
+  },
+  "completedBrokenImages": 0,
+  "scriptEncodedBytes": 287416,
+  "runtimeExceptions": [],
+  "noJS": true
+}

@@ -1,0 +1,7 @@
+import Link from "next/link";
+import {requireUser} from "@/lib/auth";
+import {connectMongoose} from "@/lib/db";
+import {FavoriteModel} from "@/models/Favorite";
+import {AdviserSessionModel} from "@/models/AdviserSession";
+import {InquiryModel} from "@/models/Inquiry";
+export default async function Page(){const user=await requireUser();await connectMongoose();const[saved,decisions,inquiries]=await Promise.all([FavoriteModel.countDocuments({userId:user.id}),AdviserSessionModel.countDocuments({userId:user.id,status:"COMPLETED"}),InquiryModel.countDocuments({buyerId:user.id})]);return <div className="container py-14"><p className="eyebrow">Signed in as {user.email}</p><h1 className="display mt-4 text-5xl">My Garage</h1><p className="mt-5 text-lg text-[#69756f]">Welcome, {user.name}. Pick up where your research left off.</p><div className="mt-10 grid gap-5 md:grid-cols-3">{[["/dashboard/favorites","Saved cars",saved],["/dashboard/recommendations","My decisions",decisions],["/dashboard/inquiries","Inquiries",inquiries]].map(([href,label,count])=><Link className="card p-8" href={String(href)} key={href}><span className="text-5xl font-bold">{count}</span><h2 className="mt-6 text-xl font-bold">{label}</h2></Link>)}</div><div className="mt-10 flex flex-wrap gap-3"><Link className="btn btn-dark" href="/car-adviser">Start a decision</Link><Link className="btn btn-light" href="/compare">Compare cars</Link><Link className="btn btn-light" href="/cars">Discover cars</Link></div></div>}

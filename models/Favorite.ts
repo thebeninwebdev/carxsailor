@@ -1,0 +1,1 @@
+import mongoose,{Schema} from "mongoose";const schema=new Schema({userId:{type:String,required:true,index:true},vehicleId:{type:String,required:true,index:true}},{timestamps:true});schema.index({userId:1,vehicleId:1},{unique:true});export const FavoriteModel=mongoose.models.Favorite||mongoose.model("Favorite",schema);
