@@ -1,5 +1,5 @@
 import {expect,it} from "vitest";
-import {adminWhatsAppNumber,buildWhatsAppInquiryUrl} from "./whatsapp";
+import {adminWhatsAppNumber,buildSellerInquiryAdminWhatsAppUrl,buildWhatsAppInquiryUrl} from "./whatsapp";
 const vehicle={year:2018,make:"Toyota",model:"Camry",price:"₦15,500,000"};
 it("builds an encoded contextual WhatsApp URL before submission",()=>{
   const result=new URL(buildWhatsAppInquiryUrl({vehicle,listingUrl:"https://carxsailor.example/cars/toyota-camry"}));
@@ -15,4 +15,13 @@ it("includes the saved reference in the fast-track message",()=>{
 });
 it("normalizes a configured public number",()=>{
   expect(adminWhatsAppNumber({NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER:"+234 915 527 6978"})).toBe("2349155276978");
+});
+it("builds a contextual admin WhatsApp URL for a seller's new inquiry",()=>{
+  const result=new URL(buildSellerInquiryAdminWhatsAppUrl({vehicle,listingUrl:"https://carxsailor.example/cars/toyota-camry",inquiryReference:"CX-INQ-A83F2"}));
+  const message=result.searchParams.get("text");
+  expect(result.origin+result.pathname).toBe("https://wa.me/2349155276978");
+  expect(message).toContain("received a new buyer inquiry");
+  expect(message).toContain("2018 Toyota Camry");
+  expect(message).toContain("Inquiry reference: CX-INQ-A83F2");
+  expect(message).toContain("https://carxsailor.example/cars/toyota-camry");
 });
