@@ -16,6 +16,7 @@ const idSchema=z.string().regex(/^[a-f\d]{24}$/i);
 async function buyer(){
   const user=await getCurrentUser();
   if(!user) throw new MutationError("Sign in to continue.",401);
+  if(user.role==="ADMIN")throw new MutationError("Admin accounts can only use the admin workspace.",403);
   await connectMongoose();
   return user;
 }

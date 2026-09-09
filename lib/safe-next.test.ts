@@ -1,5 +1,9 @@
 import {describe,it,expect} from "vitest";
-import {safeNext} from "./safe-next";
+import {isAdminWorkspacePath,safeNext} from "./safe-next";
+describe("admin workspace paths",()=>{
+  it.each(["/admin","/admin/inquiries","/admin?notice=saved"])("accepts %s",path=>expect(isAdminWorkspacePath(path)).toBe(true));
+  it.each(["/","/cars","/administrator"])("rejects %s",path=>expect(isAdminWorkspacePath(path)).toBe(false));
+});
 describe("authentication return paths",()=>{
   it("preserves the requested page, query and results anchor",()=>expect(safeNext("/car-adviser?resume=1#results")).toBe("/car-adviser?resume=1#results"));
   it.each(["https://evil.example","//evil.example","/\\evil.example","/\nevil.example",undefined])("rejects unsafe destination %s",value=>expect(safeNext(value)).toBe("/dashboard"));
@@ -8,6 +12,8 @@ describe("authentication return paths",()=>{
 import {postLoginDestination} from "./safe-next";
 describe("role destinations",()=>{
  it("routes admins to admin",()=>expect(postLoginDestination("ADMIN",false)).toBe("/admin"));
+ it("keeps admins inside their workspace",()=>expect(postLoginDestination("ADMIN",false,"/admin/inquiries")).toBe("/admin/inquiries"));
+ it.each(["/","/cars","/dashboard","/vendor/cars"])("blocks admin callbacks outside the admin workspace: %s",path=>expect(postLoginDestination("ADMIN",false,path)).toBe("/admin"));
  it("routes seller profiles to vendor even with a BUYER auth role",()=>expect(postLoginDestination("BUYER",true)).toBe("/vendor"));
  it("routes buyers to their garage",()=>expect(postLoginDestination("BUYER",false)).toBe("/dashboard"));
  it("keeps safe callbacks",()=>expect(postLoginDestination("BUYER",false,"/dashboard/favorites?sort=new")).toBe("/dashboard/favorites?sort=new"));

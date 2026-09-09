@@ -1,3 +1,4 @@
+export function isAdminWorkspacePath(value:string){return /^\/admin(?:[/?#]|$)/.test(value);}
 export function safeNext(value: unknown, fallback = "/dashboard") {
   if (typeof value !== "string" || !value.startsWith("/") || /[\\\u0000-\u0020]/.test(value)) return fallback;
   try {
@@ -9,7 +10,7 @@ export function safeNext(value: unknown, fallback = "/dashboard") {
 export function postLoginDestination(role: string, hasVendorProfile: boolean, callback?: unknown) {
   const fallback = role === "ADMIN" ? "/admin" : hasVendorProfile || role === "VENDOR" ? "/vendor" : "/dashboard";
   const path = safeNext(callback, fallback);
-  if (role !== "ADMIN" && /^\/admin(?:[/?#]|$)/.test(path)) return fallback;
-  if (role === "ADMIN" && /^\/vendor(?:[/?#]|$)/.test(path)) return "/admin";
+  if(role==="ADMIN")return isAdminWorkspacePath(path)?path:"/admin";
+  if(isAdminWorkspacePath(path))return fallback;
   return path;
 }

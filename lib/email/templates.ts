@@ -21,7 +21,8 @@ function layout(subject: string, paragraphs: string[], cta?: {label: string; url
   };
 }
 export function renderEmail(props: EmailTemplate): RenderedEmail {
-  const greeting = props.name?.trim() ? "Hi " + props.name.trim().split(/\s+/)[0] + "," : "Hello,";
+  const name="name" in props?props.name:undefined;
+  const greeting=name?.trim()?"Hi "+name.trim().split(/\s+/)[0]+",":"Hello,";
   switch (props.kind) {
     case "welcome":
       return layout("Welcome to CarXSailor", [greeting, "Your account is now ready.", "Discover cars, compare your options, and save the vehicles that interest you. We're building a better way to find the right car based on what matters to you."], {label:"Explore CarXSailor", url:props.url});

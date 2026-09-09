@@ -11,9 +11,8 @@ async function main() {
   if(args.some(arg=>arg.startsWith("--")&&arg!=="--send")) throw new Error("Only --send is supported.");
   const selected=args.find(arg=>!arg.startsWith("--")) || "all";
   const {renderEmail}=await import("../lib/email/templates");
-  const {appUrl,emailConfig}=await import("../lib/email/config");
+  const {adminNotificationEmail,appUrl}=await import("../lib/email/config");
   const {sendTransactionalEmail}=await import("../lib/email/send-email");
-  if(!emailConfig().testMode) throw new Error("Test recipient routing must be active.");
   // These preview links deliberately contain invalid tokens, not real credentials.
   const samples:import("../lib/email/templates").EmailTemplate[]=[
     {kind:"welcome",name:"Alex Seller",url:appUrl("/cars")},
@@ -24,13 +23,13 @@ async function main() {
       url:appUrl("/vendor/cars"),...(kind==="car-rejected"?{reason:"Sample reason: please provide clear vehicle photos."}:{}),
     })),
     {kind:"inquiry",name:"Alex Seller",title:"2020 Toyota Camry",reference:"DEVELOPMENT-PREVIEW",url:appUrl("/vendor/inquiries")},
+    {kind:"admin-inquiry",customerName:"Jamie Buyer",customerEmail:"buyer@example.com",title:"2020 Toyota Camry",price:"₦15,500,000",message:"Is this vehicle still available?",reference:"CX-INQ-PREVIEW",listingReference:"DEVELOPMENT-PREVIEW",submittedAt:"9 Sep 2026, 11:00",adminUrl:appUrl("/admin/inquiries#inquiry-CX-INQ-PREVIEW"),listingUrl:appUrl("/cars/2020-toyota-camry")},
   ];
   const chosen=samples.filter(sample=>selected==="all"||sample.kind===selected);
-  if(!chosen.length) throw new Error("Choose all, welcome, verification, password-reset, car-submitted, car-approved, car-rejected, car-resubmitted, or inquiry.");
+  if(!chosen.length) throw new Error("Choose all, welcome, verification, password-reset, car-submitted, car-approved, car-rejected, car-resubmitted, inquiry, or admin-inquiry.");
   if(args.includes("--send")) {
     // Validate before any sends; never silently fall back to the intended address.
-    const {getEmailRecipient}=await import("../lib/email/config");
-    getEmailRecipient("seller@example.com");
+    adminNotificationEmail();
     if(!process.env.RESEND_API_KEY?.trim()) throw new Error("Set RESEND_API_KEY on the server.");
   }
   const directory=path.join(process.cwd(),".email-previews");
@@ -40,13 +39,13 @@ async function main() {
     await writeFile(path.join(directory,sample.kind+".html"),rendered.html);
     console.info("Preview written:",sample.kind);
     if(args.includes("--send")) {
-      const result=await sendTransactionalEmail({to:"seller@example.com",template:sample.kind,...rendered});
+      const result=await sendTransactionalEmail({to:adminNotificationEmail(),template:sample.kind,...rendered});
       if(!result.success) throw new Error(result.error);
       // Resend's default limit is low; keep a batch of samples sequential.
       await new Promise(resolve=>setTimeout(resolve,600));
     }
   }
-  if(!args.includes("--send")) console.info("Preview only. Add --send to email the selected templates to RESEND_TEST_EMAIL. Preview auth links are not valid tokens.");
+  if(!args.includes("--send")) console.info("Preview only. Add --send to email the selected templates to ADMIN_NOTIFICATION_EMAIL. Preview auth links are not valid tokens.");
 }
 main().catch(error=>{
   console.error(error instanceof Error?error.message:"Email test failed.");

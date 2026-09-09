@@ -1,9 +1,10 @@
 const fallbackWhatsAppNumber="2349155276978";
+const configuredWhatsAppNumber=process.env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER;
 
 type WhatsAppVehicle={year:number;make:string;model:string;price:string};
 type WhatsAppInquiryOptions={vehicle:WhatsAppVehicle;listingUrl:string;inquiryReference?:string};
 
-export function adminWhatsAppNumber(env:Record<string,string|undefined>=process.env){
+export function adminWhatsAppNumber(env:Record<string,string|undefined>={NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER:configuredWhatsAppNumber}){
   const number=(env.NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER?.trim()||fallbackWhatsAppNumber).replace(/\D/g,"");
   if(!/^\d{8,15}$/.test(number))throw new Error("NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER must contain 8 to 15 digits.");
   return number;

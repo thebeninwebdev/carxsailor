@@ -12,6 +12,6 @@ export default async function Page(){
   const cars=await VehicleModel.find({_id:{$in:ids}}).select("title").lean();
   const titles=new Map(cars.map(car=>[String(car._id),car.title]));
   return <DashboardShell title="Your inquiries" subtitle="My Garage" links={links}>
-    {inquiries.length?<div className="grid gap-3">{inquiries.map(row=><article className="card p-6" key={String(row._id)}><h2 className="font-bold">{titles.get(row.vehicleId)||"Vehicle inquiry"}</h2><p className="mt-2 text-sm">{row.kind.replaceAll("_"," ")} ? {row.status}</p><p className="mt-4">{row.message}</p></article>)}</div>:<div className="card p-10"><h2 className="font-bold">No conversations yet</h2><p className="mt-2 text-sm text-[#68756f]">Contact a vendor from a vehicle page to start one.</p></div>}
+    {inquiries.length?<div className="grid gap-3">{inquiries.map(row=><article className="card p-6" key={String(row._id)}><h2 className="font-bold">{titles.get(row.vehicleId)||"Vehicle inquiry"}</h2><p className="mt-2 text-sm">{String(row.reference||row._id)} · {row.kind.replaceAll("_"," ")} · {row.status}</p><p className="mt-4">{row.message}</p></article>)}</div>:<div className="card p-10"><h2 className="font-bold">No conversations yet</h2><p className="mt-2 text-sm text-[#68756f]">Contact a vendor from a vehicle page to start one.</p></div>}
   </DashboardShell>;
 }

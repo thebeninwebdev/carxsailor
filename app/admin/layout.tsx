@@ -1,1 +1,10 @@
-import {Car,LayoutDashboard,MessageSquare,Store,Users} from "lucide-react";import {DashboardShell} from "@/components/dashboard/shell";import {requireAdmin} from "@/lib/auth";const links=[{href:"/admin",label:"Overview",icon:LayoutDashboard},{href:"/admin/vendors",label:"Vendors",icon:Store},{href:"/admin/cars",label:"Listings",icon:Car},{href:"/admin/users",label:"Users",icon:Users},{href:"/admin/inquiries",label:"Inquiries",icon:MessageSquare}];export const metadata={robots:{index:false,follow:false}};export default async function Layout({children}:{children:React.ReactNode}){await requireAdmin();return <DashboardShell title="Platform control" subtitle="Admin dashboard" links={links}>{children}</DashboardShell>}
+import {Car,LayoutDashboard,MessageSquare,Store,Users} from "lucide-react";
+import {DashboardShell} from "@/components/dashboard/shell";
+import {SignOutButton} from "@/components/navigation/sign-out-button";
+import {requireAdmin} from "@/lib/auth";
+const links=[{href:"/admin",label:"Overview",icon:LayoutDashboard},{href:"/admin/vendors",label:"Vendors",icon:Store},{href:"/admin/cars",label:"Listings",icon:Car},{href:"/admin/users",label:"Users",icon:Users},{href:"/admin/inquiries",label:"Inquiries",icon:MessageSquare}];
+export const metadata={robots:{index:false,follow:false}};
+export default async function Layout({children}:{children:React.ReactNode}){
+  await requireAdmin();
+  return <><div className="container flex justify-end pt-4"><div className="w-36"><SignOutButton/></div></div><DashboardShell title="Platform control" subtitle="Admin dashboard" links={links}>{children}</DashboardShell></>;
+}
