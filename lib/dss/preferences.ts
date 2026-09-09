@@ -1,18 +1,11 @@
-import { z } from "zod";
+import {z} from "zod";
 export {criteria,defaultPreference} from "./criteria";
-
-const weight = z.number().min(0).max(1);
-export const preferenceSchema = z.object({
-  budget:z.object({min:z.number().nonnegative().optional(),max:z.number().positive().optional()}).refine(b=>b.min===undefined||b.max===undefined||b.min<=b.max,"Minimum exceeds maximum").optional(),
-  transmission:z.enum(["AUTOMATIC","MANUAL","NO_PREFERENCE"]).optional(),
-  preferredBodyTypes:z.array(z.string().max(30)).max(10).optional(),
-  preferredMakes:z.array(z.string().max(60)).max(10).optional(),
-  excludedMakes:z.array(z.string().max(60)).max(10).optional(),
-  year:z.object({min:z.number().int().min(1950).optional(),max:z.number().int().optional()}).optional(),
-  mileage:z.object({maximum:z.number().nonnegative()}).optional(),
-  engineHealth:z.object({minimum:z.number().min(0).max(100)}).optional(),
-  seatingCapacity:z.object({minimum:z.number().int().min(1).max(50)}).optional(),
-  priorities:z.object({fuelEconomy:weight,reliability:weight,maintenance:weight,comfort:weight,performance:weight,practicality:weight,appearance:weight}),
-  usages:z.array(z.string().max(50)).max(10).default([]),
-  interpretedSummary:z.string().max(500).default("Your selected budget, requirements and priorities."),
+const weight=z.number().min(0).max(1),prioritySchema=z.strictObject({fuelEconomy:weight,reliability:weight,maintenance:weight,comfort:weight,performance:weight,practicality:weight,appearance:weight}).transform(value=>{const ranked=Object.entries(value).sort((a,b)=>b[1]-a[1]);return Object.fromEntries(ranked.map(([key,amount],index)=>[key,index<3?amount:0])) as typeof value}),bodyType=z.enum(["SEDAN","SUV","HATCHBACK","COUPE","PICKUP","MINIVAN","WAGON","CONVERTIBLE","OTHER"]);
+export const preferenceSchema=z.strictObject({
+ budget:z.strictObject({min:z.number().nonnegative().optional(),max:z.number().min(100_000).max(1_000_000_000).optional()}).refine(v=>v.min===undefined||v.max===undefined||v.min<=v.max,"Minimum exceeds maximum").optional(),
+ useCase:z.enum(["DAILY","FAMILY","BUSINESS","LONG_DISTANCE","ROUGH_ROADS","PERFORMANCE","LUXURY"]).optional(),transmission:z.enum(["AUTOMATIC","MANUAL","CVT","OTHER","NO_PREFERENCE"]).optional(),fuelType:z.enum(["PETROL","DIESEL","HYBRID","ELECTRIC","OTHER","NO_PREFERENCE"]).optional(),origin:z.enum(["NIGERIAN_USED","FOREIGN_USED","BRAND_NEW","NO_PREFERENCE"]).optional(),
+ preferredBodyTypes:z.array(bodyType).max(3).optional(),preferredMakes:z.array(z.string().trim().min(1).max(60)).max(10).optional(),excludedMakes:z.array(z.string().trim().min(1).max(60)).max(10).optional(),
+ year:z.strictObject({min:z.number().int().min(1950).max(new Date().getFullYear()+1).optional(),max:z.number().int().min(1950).max(new Date().getFullYear()+1).optional()}).optional(),mileage:z.strictObject({maximum:z.number().nonnegative().max(2_000_000)}).optional(),engineHealth:z.strictObject({minimum:z.number().min(0).max(100)}).optional(),seatingCapacity:z.strictObject({minimum:z.number().int().min(1).max(50)}).optional(),
+ priorities:prioritySchema,
+ usages:z.array(z.string().trim().max(50)).max(10).default([]),hardConstraints:z.array(z.strictObject({field:z.string().max(50),operator:z.string().max(30),value:z.unknown()})).max(20).default([]),missingInformation:z.array(z.string().max(100)).max(10).default([]),clarificationRequired:z.boolean().default(false),clarificationQuestion:z.string().max(300).optional(),interpretedSummary:z.string().max(500).default("Your selected budget and preferences.")
 });

@@ -1,1 +1,2 @@
-export default function Page(){return <div className="container max-w-2xl py-20"><p className="eyebrow">Contact</p><h1 className="display mt-4 text-5xl">How can we help?</h1><form className="card mt-8 grid gap-4 p-7"><label><span className="label">Email</span><input className="input" type="email" required/></label><label><span className="label">Message</span><textarea className="input min-h-32" required/></label><a className="btn btn-dark" href="mailto:hello@carxsailor.com">Email CarxSailor</a></form></div>}
+import {ContactForm} from "@/components/forms/contact-form";
+export default function Page(){return <div className="container max-w-2xl py-20"><p className="eyebrow">Contact</p><h1 className="display mt-4 text-5xl">How can we help?</h1><ContactForm/></div>;}

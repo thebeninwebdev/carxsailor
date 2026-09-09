@@ -1,3 +1,4 @@
+import {requireAdmin} from "@/lib/auth";
 import {connectMongoose} from "@/lib/db";
 import {InquiryModel} from "@/models/Inquiry";
 import {VehicleModel} from "@/models/Vehicle";
@@ -5,6 +6,7 @@ import {VehicleModel} from "@/models/Vehicle";
 export const dynamic="force-dynamic";
 
 export default async function Page(){
+  await requireAdmin();
   await connectMongoose();
   const inquiries=await InquiryModel.find({}).sort({createdAt:-1}).lean();
   const vehicleIds=[...new Set(inquiries.map(inquiry=>inquiry.vehicleId))];

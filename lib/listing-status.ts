@@ -1,0 +1,2 @@
+export const vehicleStatuses=["DRAFT","PENDING_REVIEW","ACTIVE","REJECTED","SOLD","SUSPENDED","ARCHIVED"] as const;
+export function listingStatusLabel(status:string):string { return ({DRAFT:"Not submitted",PENDING_REVIEW:"Under admin review",ACTIVE:"Approved ? Live",REJECTED:"Not approved",SOLD:"Sold",SUSPENDED:"Suspended",ARCHIVED:"Archived"} as Record<string,string>)[status] ?? status.replaceAll("_"," "); }

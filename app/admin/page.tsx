@@ -1,3 +1,4 @@
+import {requireAdmin} from "@/lib/auth";
 import {Metric} from "@/components/dashboard/shell";
 import {authDatabase,connectMongoose} from "@/lib/db";
 import {VehicleModel} from "@/models/Vehicle";
@@ -6,6 +7,7 @@ import {VendorProfileModel} from "@/models/VendorProfile";
 export const dynamic="force-dynamic";
 
 export default async function Page(){
+  await requireAdmin();
   await connectMongoose();
   const[users,pendingVendors,activeCars,pendingListings]=await Promise.all([
     authDatabase.collection("user").countDocuments(),

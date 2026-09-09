@@ -1,3 +1,4 @@
+import {requireAdmin} from "@/lib/auth";
 import Link from "next/link";
 import {connectMongoose} from "@/lib/db";
 import {VendorProfileModel} from "@/models/VendorProfile";
@@ -5,6 +6,7 @@ import {VendorProfileModel} from "@/models/VendorProfile";
 export const dynamic="force-dynamic";
 
 export default async function Page(){
+  await requireAdmin();
   await connectMongoose();
   const vendors=await VendorProfileModel.find({}).sort({createdAt:-1}).select("displayName businessName status location createdAt").lean();
   return <div><div><h2 className="text-xl font-bold">Vendor moderation</h2><p className="mt-1 text-sm text-[#68756f]">{vendors.length} seller profiles</p></div>

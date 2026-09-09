@@ -1,0 +1,6 @@
+type ListingValues={make:string;model:string;year:number;price:number;mileage:number;city:string;transmission:string;description:string};
+export function ListingFields({values}:{values?:ListingValues}){
+  return <><div className="grid gap-3 sm:grid-cols-2">{([["make","Make"],["model","Model"],["year","Year"],["price","Price (NGN)"],["mileage","Mileage (km)"],["city","City"]] as const).map(([name,label])=><label key={name}><span className="label">{label}</span><input className="input" name={name} defaultValue={values?.[name]} required type={["year","price","mileage"].includes(name)?"number":"text"} min={name==="year"?1950:name==="price"?1:name==="mileage"?0:undefined} max={name==="year"?new Date().getFullYear()+1:undefined}/></label>)}</div>
+    <label><span className="label">Transmission</span><select className="input" name="transmission" defaultValue={values?.transmission??"AUTOMATIC"}>{["AUTOMATIC","MANUAL","CVT","OTHER"].map(value=><option key={value}>{value}</option>)}</select></label>
+    <label><span className="label">Description</span><textarea className="input min-h-28" name="description" defaultValue={values?.description} required minLength={30} maxLength={5000}/></label></>;
+}

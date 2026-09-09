@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Isolated browser review profile
 /.browser-review/
+
+# Local transactional email previews
+/.email-previews/

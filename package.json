@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "email:test": "node --conditions=react-server --import tsx scripts/test-email.ts"
   },
   "dependencies": {
     "better-auth": "^1.7.1",
@@ -22,6 +23,7 @@
     "next": "16.3.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "resend": "^6.26.0",
     "server-only": "^0.0.1",
     "zod": "^4.4.3"
   },

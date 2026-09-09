@@ -21,3 +21,21 @@
 .back-to-top{position:fixed;right:max(24px,env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 18px;border:1px solid #d7f25c;border-radius:999px;background:#19291f;color:#d7f25c;font-size:12px;font-weight:750;box-shadow:0 8px 28px #0002}.back-to-top svg{flex-shrink:0}@media(max-width:620px){.back-to-top{right:16px;bottom:calc(18px + env(safe-area-inset-bottom));width:48px;padding:0}.back-to-top span{display:none}}
 
 @media(prefers-reduced-motion:reduce){.back-to-top{transform:none!important}}
+
+/* Decision Support: guided choices and explained full-inventory ranking */
+.decision-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.decision-choice{min-height:74px;padding:15px;text-align:left;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+.decision-choice strong,.decision-choice span{display:block}.decision-choice span{margin-top:6px;color:#68756f;font-size:12px;line-height:1.45}
+.decision-choice[aria-pressed=true]{border-color:#507133;background:#f0f5e6;box-shadow:inset 0 0 0 1px #507133}
+.budget-field{display:grid;grid-template-columns:auto minmax(0,150px) auto;align-items:center;justify-content:start;gap:10px;font-size:clamp(25px,6vw,42px);font-weight:750}
+.budget-field input{width:100%;border:0;border-bottom:2px solid #507133;background:transparent;padding:5px;text-align:center;outline:none}
+.budget-field b{font-size:.48em}.budget-helper{font-size:16px;font-weight:750;color:#245c47}
+.decision-chips{display:flex;flex-wrap:wrap;gap:9px}.decision-chips button{min-height:46px;padding:9px 15px;border:1px solid var(--line);border-radius:999px;background:white;font-weight:750}
+.decision-chips button[aria-pressed=true]{background:#163f31;color:white;border-color:#163f31}
+.decision-actions,.results-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-top:1px solid var(--line);padding-top:20px}
+.preference-summary{margin-top:28px;padding:22px;border-radius:18px;background:#e8eee4}.preference-summary h2{font-size:18px;font-weight:800}.preference-summary dl{display:flex;flex-wrap:wrap;gap:18px 36px;margin-top:16px}.preference-summary dt{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#68756f}.preference-summary dd{margin-top:4px;font-size:14px;font-weight:750;text-transform:capitalize}
+.top-matches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.recommendation-card{height:100%;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:white}.recommendation-card .vehicle-motion-card{border:0;border-radius:0}.recommendation-card-top:first-child{box-shadow:0 15px 40px #163f3118;border-color:#89a45d}
+.recommendation-rank{display:flex;align-items:center;gap:10px;padding:14px 16px;background:#163f31;color:white}.recommendation-rank span{font-size:20px;font-weight:850}.recommendation-rank strong{flex:1;color:#d7f25c;font-size:11px;text-transform:uppercase;letter-spacing:.08em}.recommendation-rank b{font-size:20px}.recommendation-rank small{display:block;font-size:9px;text-align:right;text-transform:uppercase}
+.recommendation-explanation{padding:20px;background:#edf2e9}.recommendation-explanation h3{font-size:14px;font-weight:800}.recommendation-explanation ul{display:grid;gap:8px;margin-top:10px}.recommendation-explanation li{display:flex;gap:8px;font-size:13px;line-height:1.5}.recommendation-explanation li span{color:#47705f;font-weight:900}
+@media(max-width:900px){.top-matches{grid-template-columns:1fr 1fr}.top-matches>*:first-child{grid-column:1/-1}.results-heading{align-items:flex-start}}
+@media(max-width:620px){.decision-choice-grid,.top-matches{grid-template-columns:1fr}.top-matches>*:first-child{grid-column:auto}.budget-field{grid-template-columns:auto minmax(0,120px) auto}.decision-actions{position:sticky;bottom:0;z-index:4;margin:0 -23px -23px;padding:14px 23px calc(14px + env(safe-area-inset-bottom));background:#fff}.results-heading{display:grid}.preference-summary dl{display:grid;grid-template-columns:1fr 1fr}.recommendation-rank{position:sticky;top:80px;z-index:3}}

@@ -8,4 +8,4 @@ export const criteria: {key: PriorityKey; label: string; description: string}[] 
   {key:"practicality",label:"Practicality",description:"Everyday usefulness, alongside your required seat count."},
   {key:"appearance",label:"Body condition",description:"Recorded exterior condition, rather than brand prestige."},
 ];
-export const defaultPreference:CarPreference = {priorities:{fuelEconomy:.75,reliability:1,maintenance:.75,comfort:.5,performance:.25,practicality:.5,appearance:.25},usages:[],hardConstraints:[],missingInformation:[],clarificationRequired:false,interpretedSummary:"Your selected budget, requirements and priorities."};
+export const defaultPreference:CarPreference = {priorities:{fuelEconomy:0,reliability:0,maintenance:0,comfort:0,performance:0,practicality:0,appearance:0},usages:[],hardConstraints:[],missingInformation:[],clarificationRequired:false,interpretedSummary:"Your selected budget and preferences."};
