@@ -1,1 +1,5 @@
-import type {MetadataRoute} from "next";export default function robots():MetadataRoute.Robots{return{rules:[{userAgent:"*",allow:"/",disallow:["/admin/","/vendor/","/dashboard/","/api/"]}],sitemap:`${process.env.NEXT_PUBLIC_APP_URL||"http://localhost:3000"}/sitemap.xml`}}
+import type {MetadataRoute} from "next";
+import {absoluteUrl, indexingEnabled} from "@/lib/seo";
+export default function robots(): MetadataRoute.Robots {
+  return {rules: indexingEnabled ? [{userAgent: "*", allow: "/", disallow: ["/admin$", "/admin/", "/vendor$", "/vendor/", "/dashboard$", "/dashboard/", "/api/"]}] : [{userAgent: "*", disallow: "/"}], sitemap: absoluteUrl("/sitemap.xml")};
+}

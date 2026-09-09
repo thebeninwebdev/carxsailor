@@ -1,62 +1,121 @@
-﻿# CarxSailor
+# CarXSailor
 
-CarxSailor is a Nigerian vehicle marketplace with an explainable decision-support adviser. Buyers can browse normally or describe their situation in plain language.
+[CarXSailor](https://carxsailor.vercel.app) is a vehicle marketplace for Nigeria with explained car recommendations. Buyers can browse listings, set a budget and priorities, compare up to three cars, and save cars or decisions in My Garage.
 
-## Architecture
+## Features
+
+- Vehicle search by make and price, listing photos, condition reports and seller inquiries.
+- Guided decision support with hard requirements, weighted ratings, strengths, trade-offs and missing-data explanations.
+- Optional natural-language preferences, with a local interpreter when an AI provider is unavailable.
+- Buyer accounts, saved cars and decisions, approved seller workspaces, and administrator moderation.
+- Responsive mobile layouts, accessible navigation and reduced-motion support.
+- Branded favicons, social previews, canonical metadata and a dynamic sitemap.
+
+## Stack and architecture
+
+Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Motion, MongoDB/Mongoose, Better Auth, Zod and Vitest. Cloudinary stores uploaded photos; Resend handles transactional email.
 
 ```text
-User -> Next.js -> AI interpreter -> CarPreference
-     -> MongoDB candidate query -> deterministic DSS ranking
-     -> recommendation -> optional AI explanation
+Guided answers or natural-language preferences
+  -> validated CarPreference
+  -> required inventory filters
+  -> deterministic weighted ranking
+  -> explained matches, comparison and saved decisions
 ```
 
-The layers stay separate: AI interprets language and ambiguity; application-owned filters retrieve real listings; the deterministic DSS ranks those listings; AI may explain results but never invents cars, prices, scores, or inspection facts. A safe local interpreter keeps guided recommendations available when no AI credential is configured.
+AI interprets language; application code filters and scores actual listings. AI does not invent cars, prices, scores or inspection facts. Missing ratings are disclosed. The guided flow works without an AI credential.
 
-## Stack and security
+Better Auth owns users, credentials and sessions. Mongoose owns marketplace records. Roles are BUYER, VENDOR and ADMIN; publishing also requires an approved seller profile. Mutations enforce server-side role and ownership checks, validation and audit logging.
 
-- Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4
-- MongoDB with Mongoose for CarxSailor models
-- Better Auth with its official native MongoDB adapter
-- Zod validation and Vitest DSS tests
-- Server-side role/ownership checks, whitelisted inputs, duplicate favorite protection, inquiry throttling, audit logs, private-field projections, and no client-side secrets
+## Local setup
 
-Better Auth owns credentials, sessions, accounts and users. Mongoose owns domain profiles and marketplace data; passwords are never duplicated in a domain model. Roles are `BUYER`, `VENDOR`, and `ADMIN`. Vendor publishing additionally requires an approved `VendorProfile`.
+Requirements: Node.js 20.9 or newer, npm, and a reachable MongoDB instance.
 
-## Setup
+1. Run `npm ci`.
+2. Copy `.env.example` to `.env.local`.
+3. Set `MONGODB_URI` and a high-entropy `BETTER_AUTH_SECRET`.
+4. Keep `NEXT_PUBLIC_APP_URL` and `BETTER_AUTH_URL` at `http://localhost:3000` for local development.
+5. Run `npm run dev` and open `http://localhost:3000`.
 
-1. Copy `.env.example` to `.env.local`.
-2. Set `MONGODB_URI` and generate a strong `BETTER_AUTH_SECRET`.
-3. Run `npm install`.
-4. Run `npm run seed` to replace the vehicle inventory with one approved test seller and 10 varied test listings.
-5. Run `npm run dev`.
+Optionally run `npm run seed` against a development database. It replaces only listings tagged `test-inventory`, creates or updates an approved test seller, and inserts 10 sample cars. Sample ratings and photos are test data, not automotive evidence. Sample listings are excluded from the sitemap, receive `noindex`, and do not emit vehicle offer structured data.
 
-Environment variables:
+Promote an administrator by securely setting the intended Better Auth user's role to `ADMIN` in MongoDB. There is no public admin-promotion endpoint.
 
-- `MONGODB_URI`: shared MongoDB database
-- `BETTER_AUTH_SECRET`: required high-entropy production secret
-- `BETTER_AUTH_URL`: canonical auth origin
-- `NEXT_PUBLIC_APP_URL`: public application origin
-- `CLOUDINARY_URL`: server-only Cloudinary credential URL used for uploaded vehicle images
-- `AI_PROVIDER`: `gemini` (recommended for the free tier) or `openai`
-- `GEMINI_API_KEY`: server-only key from Google AI Studio; never prefix it with `NEXT_PUBLIC_`
-- `AI_API_KEY`: OpenAI key, also accepted as a backwards-compatible Gemini key
-- `AI_MODEL`: optional override; Gemini defaults to `gemini-2.5-flash-lite`
+## Configuration
 
-Gemini interprets free-form adviser messages into validated preferences. If its quota is exhausted, it times out, or it returns invalid data, the adviser automatically falls back to the local interpreter.
+| Variable | Purpose |
+| --- | --- |
+| `MONGODB_URI` | Database connection string. |
+| `BETTER_AUTH_SECRET` | Authentication secret. |
+| `BETTER_AUTH_URL` | Authentication origin; match the application origin. |
+| `NEXT_PUBLIC_APP_URL` | Application origin used by authentication, email and listing links. |
+| `SITE_URL` | Canonical SEO origin. Defaults to `https://carxsailor.vercel.app`, independently of local application URLs. |
+| `GOOGLE_SITE_VERIFICATION` | Optional Search Console HTML verification token, using only the tag's content value. |
+| `CLOUDINARY_URL` | Server-only upload credentials; separate Cloudinary fields are also supported in `.env.example`. |
+| `RESEND_API_KEY` | Transactional email credentials. |
+| `EMAIL_FROM` | Sender identity; use a verified sender for production. |
+| `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS` | Alternative sender configuration. |
+| `ADMIN_NOTIFICATION_EMAIL` | Destination for administrator notifications. |
+| `NEXT_PUBLIC_ADMIN_WHATSAPP_NUMBER` | Customer-facing WhatsApp number, international digits only. |
+| `AI_PROVIDER` | Optional `gemini` or `openai` interpreter. |
+| `GEMINI_API_KEY` | Server-only Gemini credential. |
+| `AI_API_KEY` | Server-only OpenAI credential; also accepted as a legacy Gemini credential. |
+| `AI_MODEL` | Optional model override; see `lib/ai/provider.ts` for current application defaults. |
 
-The seeded ratings are explicitly test metadata, not authoritative automotive research. Promote the first admin by securely setting the Better Auth user's `role` field to `ADMIN` in MongoDB; never expose an admin-promotion endpoint.
+Never put secrets in variables prefixed with `NEXT_PUBLIC_`. See [email configuration](docs/EMAIL.md) for delivery setup and testing.
+
+## SEO and brand assets
+
+The canonical public site is **https://carxsailor.vercel.app**.
+
+- `lib/seo.ts` centralizes canonical URLs, descriptions, Open Graph and Twitter cards, and safe JSON-LD serialization.
+- Public pages have distinct titles, descriptions and canonical URLs. Filter, sort, comparison and resume parameters canonicalize to their base page.
+- Vehicle pages use actual listing titles, descriptions and photos. Real listings emit Car/Offer data with NGN prices; homepage structured data identifies the WebSite and Organization. Listing scores are not represented as customer reviews.
+- `app/sitemap.ts` includes public pages, approved non-test sellers and their active non-demo vehicles, including listing image URLs. Record timestamps supply `lastModified`; static pages do not invent update dates. There is no arbitrary 1,000-listing cutoff. If the site approaches 50,000 URLs, split the sitemap before exceeding the protocol limit.
+- `app/robots.ts` directs crawlers to the sitemap and excludes private workspaces and API paths. Account and workspace pages also have `noindex` metadata. Vercel preview deployments disallow crawling and public page metadata disables indexing.
+- `app/icon.svg` is the editable ship-wheel mark in forest green and lime. `app/favicon.ico` contains 16, 32 and 48px variants; `app/apple-icon.png` is 180px. Next.js automatically adds these icon links.
+- `app/manifest.ts` references `public/icon-192.png` and `public/icon-512.png`. The manifest supplies brand identity; it does not provide offline functionality.
+- `public/social-preview.svg` is the editable 1200 x 630 sharing artwork; `public/social-preview.png` is the social-card image. Raster assets must be regenerated if their SVG sources change.
+
+The setup follows Google's [favicon guidance](https://developers.google.com/search/docs/appearance/favicon-in-search), [site-name guidance](https://developers.google.com/search/docs/appearance/site-names), and [sitemap guidance](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap). Search engines determine indexing, rankings and the final appearance of results.
+
+## Production deployment
+
+1. Configure MongoDB, authentication, image uploads and email in the hosting environment.
+2. Set `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL` and `SITE_URL` to `https://carxsailor.vercel.app` for production.
+3. Run the validation commands below, then deploy. Keep Vercel preview environments separate from production.
+4. Check `/favicon.ico`, `/icon.svg`, `/apple-icon.png`, `/manifest.webmanifest`, `/social-preview.png`, `/robots.txt` and `/sitemap.xml` on the deployed site.
+5. Verify the site in Google Search Console. Set `GOOGLE_SITE_VERIFICATION` and redeploy if using HTML-tag verification, then submit `https://carxsailor.vercel.app/sitemap.xml`.
+6. Inspect a real listing with Google's Rich Results Test and check social link previews. Confirm production canonical tags use the public HTTPS domain.
+
+If the domain changes, update the three origin variables, redirect the old domain, and resubmit the sitemap. Local code changes do not update Vercel environment settings or register the site with search engines automatically.
 
 ## Commands
 
-- Development: `npm run dev`
-- Seed: `npm run seed`
-- Tests: `npm test`
-- Type check: `npm run typecheck`
-- Lint: `npm run lint`
-- Production build: `npm run build`
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start local development. |
+| `npm run build` | Create and type-check the production build. |
+| `npm start` | Serve the production build. |
+| `npm run lint` | Run ESLint. |
+| `npm run typecheck` | Run TypeScript without emitting files. |
+| `npm test` | Run Vitest tests. |
+| `npm run seed` | Refresh the tagged development inventory. |
+| `npm run email:test` | Exercise email configuration and templates. |
 
-The important DSS tests cover hard budget/transmission/engine constraints, weight normalization, score bounds, missing data, weight-driven ranking changes, and deterministic output.
+For an HTTP smoke check, run `npm start -- -p 3001` after building, then `node scripts/seo-review.mjs`. Pass another local or deployed origin as the first argument if needed. The check verifies canonical URLs, sharing metadata, icons, robots and the sitemap against the configured public identity.
 
+On Windows PowerShell systems that block `npm.ps1`, use `npm.cmd` with the same arguments.
 
+## Project map
 
-"# carxsailor" 
+- `app/`: pages, route handlers, metadata and shared styles.
+- `components/`: marketplace, adviser, account, navigation and motion interfaces.
+- `lib/dss/`: preference validation and deterministic ranking.
+- `lib/ai/`: optional language interpreters.
+- `lib/email/`: transactional email configuration and templates.
+- `models/`: MongoDB domain models.
+- `scripts/`: development seed and local review utilities.
+- `docs/`: email, interaction and design implementation notes.
+
+Before editing Next.js code, read `AGENTS.md` and the relevant installed guides under `node_modules/next/dist/docs/`; this repository uses the APIs of its installed Next.js version.

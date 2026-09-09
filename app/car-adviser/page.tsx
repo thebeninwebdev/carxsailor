@@ -1,6 +1,7 @@
-import type {Metadata} from "next";
+import {pageMetadata} from "@/lib/seo";
+
 import Link from "next/link";
 import {Adviser} from "@/components/adviser/adviser";
 import {GuidedAdviser} from "@/components/adviser/guided-adviser";
-export const metadata:Metadata={title:"Decision Support",description:"Tell CarXSailor what matters and rank every available car by fit."};
+export const metadata = pageMetadata("Car Adviser: Find a Car for Your Budget", "Find cars that match your budget, requirements and priorities in Nigeria. Get explained recommendations and compare your strongest matches.", "/car-adviser");
 export default async function Page({searchParams}:{searchParams:Promise<{resume?:string}>}){const {resume}=await searchParams;return <div className="bg-[#f1f2ec] py-14 sm:py-20"><div className="container"><div className="mx-auto mb-10 max-w-3xl text-center"><p className="eyebrow">Decision Support / Your personal car guide</p><h1 className="display mt-4 text-5xl sm:text-6xl">Let&apos;s find the right car for you.</h1><p className="mt-6 text-lg leading-8 text-[#68756f]">You don&apos;t need to know cars. Tell us what matters and we&apos;ll rank what&apos;s available.</p></div><GuidedAdviser resume={resume==="1"}/><details className="mx-auto mt-12 max-w-[800px]"><summary className="mx-auto w-fit cursor-pointer p-4 font-bold">Anything else you want in your car?</summary><div className="mt-6"><Adviser/></div></details><p className="mt-10 text-center text-sm text-[#69756f]">Know exactly what you want? <Link href="/cars" className="font-bold underline">Browse all cars</Link></p></div></div>}
