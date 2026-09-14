@@ -1,0 +1,21 @@
+import React from "react";
+import {renderToStaticMarkup} from "react-dom/server";
+import {beforeEach,expect,it,vi} from "vitest";
+const mocks=vi.hoisted(()=>({admin:vi.fn(),vendor:vi.fn(),select:vi.fn(),account:vi.fn()}));
+vi.mock("@/lib/auth",()=>({requireAdmin:mocks.admin}));
+vi.mock("@/lib/db",()=>({connectMongoose:vi.fn(),connectMongoClient:vi.fn(),authDatabase:{collection:()=>({findOne:mocks.account})}}));
+vi.mock("@/models/VendorProfile",()=>({VendorProfileModel:{findById:mocks.vendor}}));
+vi.mock("next/navigation",()=>({notFound:()=>{throw new Error("Not found");}}));
+vi.mock("@/components/forms/action-form",()=>({ActionForm:({children}:{children:React.ReactNode})=><form>{children}</form>}));
+vi.mock("@/components/forms/submit-button",()=>({SubmitButton:({children}:{children:React.ReactNode})=><button>{children}</button>}));
+import Page from "@/app/admin/vendors/[id]/page";
+beforeEach(()=>{vi.clearAllMocks();vi.stubGlobal("React",React);mocks.select.mockReturnValue({lean:async()=>({userId:"seller",displayName:"Lagos Cars",status:"PENDING",nin:"01234567890",phoneNumber:"08012345678",location:{state:"Lagos",city:"Ikeja"},description:"Seller description"})});mocks.vendor.mockReturnValue({select:mocks.select});mocks.account.mockResolvedValue({name:"Seller Name",email:"seller@example.com",emailVerified:true,role:"BUYER"});});
+it("renders account and private application details before approval controls",async()=>{
+ const html=renderToStaticMarkup(await Page({params:Promise.resolve({id:"123456789012345678901234"})}));
+ for(const value of ["Seller Name","seller@example.com","01234567890","08012345678","Lagos Cars","Ikeja","Seller description"])expect(html).toContain(value);
+ expect(html.indexOf("01234567890")).toBeLessThan(html.indexOf("Approve"));
+ expect(mocks.select).toHaveBeenCalledWith(expect.stringContaining("+nin"));
+ expect(mocks.account.mock.calls[0][1]).toEqual({projection:{name:1,email:1,emailVerified:1,role:1,createdAt:1,updatedAt:1}});
+});
+it("blocks access before reading private data",async()=>{mocks.admin.mockRejectedValueOnce(new Error("Forbidden"));await expect(Page({params:Promise.resolve({id:"123456789012345678901234"})})).rejects.toThrow("Forbidden");expect(mocks.vendor).not.toHaveBeenCalled();expect(mocks.account).not.toHaveBeenCalled();});
+it("handles older applications without NIN or a linked account",async()=>{mocks.select.mockReturnValue({lean:async()=>({userId:"old",displayName:"Old seller",status:"PENDING"})});mocks.account.mockResolvedValue(null);const html=renderToStaticMarkup(await Page({params:Promise.resolve({id:"123456789012345678901234"})}));expect(html).toContain("Not provided");expect(html).toContain("Account unavailable");});

@@ -23,7 +23,8 @@ export const listingSchema = z.object({
   description:z.string().trim().min(30).max(5000),
 });
 const vendorSchema = z.object({
-  displayName:z.string().trim().min(2).max(100), businessName:z.string().trim().max(120).optional(),
+  displayName:z.string().trim().min(2).max(100),
+  nin:z.string().trim().regex(/^[0-9]{11}$/, "NIN must contain exactly 11 digits."),
   phoneNumber:z.string().trim().min(7).max(30), state:z.string().trim().min(2).max(60),
   city:z.string().trim().min(2).max(60), description:z.string().trim().max(1000).optional(),
 });
@@ -102,7 +103,13 @@ export async function createListing(form:FormData):Promise<MutationSuccess> {
   const storage=getImageStorageProvider();
   let id:string;
   try {
-    for(const file of files) {validateVehicleImage(file);images.push(await storage.upload(file,{folder:String(vendor._id)+"/"+String(vehicleId),alt:title}));}
+    // Wait for each batch to settle so cleanup also includes late successes.
+    for(let offset=0;offset<files.length;offset+=3) {
+      const batch=await Promise.allSettled(files.slice(offset,offset+3).map(file=>storage.upload(file,{folder:String(vendor._id)+"/"+String(vehicleId),alt:title})));
+      for(const result of batch) if(result.status==="fulfilled") images.push(result.value);
+      const failed=batch.find(result=>result.status==="rejected");
+      if(failed?.status==="rejected") throw failed.reason;
+    }
     if(imageUrl) images.push({url:imageUrl,alt:title});
     const {city,...details}=v;
     const created=await VehicleModel.create({_id:vehicleId,...details,vendorId:vendor._id,title,
@@ -150,14 +157,14 @@ export async function applyVendor(form:FormData):Promise<MutationSuccess> {
   const user=await actor();
   if(user.role==="ADMIN") throw new MutationError("Administrators manage sellers from the admin workspace.",403);
   const {state,city,...details}=parse(vendorSchema,Object.fromEntries(form));
-  await VendorProfileModel.updateOne({userId:user.id},{$setOnInsert:{...details,userId:user.id,status:"PENDING",location:{state,city}}},{upsert:true,runValidators:true});
+  await VendorProfileModel.updateOne({userId:user.id},{$setOnInsert:{...details,businessName:details.displayName,userId:user.id,status:"PENDING",location:{state,city}}},{upsert:true,runValidators:true});
   invalidateVendor();
   return {destination:"/vendor",message:"Seller application received."};
 }
 export async function updateProfile(form:FormData):Promise<MutationSuccess> {
   const {vendor}=await seller();
   const details=parse(z.object({displayName:z.string().trim().min(2).max(100),description:z.string().trim().max(1000)}),Object.fromEntries(form));
-  const result=await VendorProfileModel.updateOne({_id:vendor._id,status:"APPROVED"},{$set:details},{runValidators:true});
+  const result=await VendorProfileModel.updateOne({_id:vendor._id,status:"APPROVED"},{$set:{...details,businessName:details.displayName}},{runValidators:true});
   if(result.matchedCount!==1) throw new MutationError("Seller account changed. Reload and try again.",409);
   invalidateVendor();
   return {destination:"/vendor/profile",message:"Seller profile updated."};

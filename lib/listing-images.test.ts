@@ -74,3 +74,19 @@ it("cleans up all uploaded files if saving the car fails",async()=>{
   expect(mocks.invalidate).not.toHaveBeenCalled();
   expect(notifyListingOwner).not.toHaveBeenCalled();
 });
+
+it("waits for late successful uploads before cleaning up a failed batch",async()=>{
+ let finish!:()=>void;
+ mocks.upload.mockRejectedValueOnce(new Error("Upload failed")).mockImplementationOnce(()=>new Promise(resolve=>{finish=()=>resolve({url:"https://example.com/late.jpg",publicId:"late",alt:"late"});}));
+ const pending=createListing(form());
+ const assertion=expect(pending).rejects.toThrow("Upload failed");
+ await vi.waitFor(()=>expect(mocks.upload).toHaveBeenCalledTimes(3));
+ expect(mocks.remove).not.toHaveBeenCalled();finish();await assertion;
+ expect(mocks.remove).toHaveBeenCalledWith("late");expect(mocks.remove).toHaveBeenCalledTimes(2);expect(mocks.create).not.toHaveBeenCalled();
+});
+it("preserves photo order when uploads finish out of order",async()=>{
+ let finish!:()=>void;
+ mocks.upload.mockImplementationOnce(()=>new Promise(resolve=>{finish=()=>resolve({url:"https://example.com/front.jpg",publicId:"front",alt:"front"});}));
+ const pending=createListing(form());await vi.waitFor(()=>expect(mocks.upload).toHaveBeenCalledTimes(3));finish();await pending;
+ expect(mocks.create.mock.calls[0][0].images.map((image:{url:string})=>image.url.split("/").pop())).toEqual(["front.jpg","side.jpg","interior.jpg"]);
+});
