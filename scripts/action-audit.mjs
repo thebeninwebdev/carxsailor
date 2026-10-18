@@ -60,7 +60,7 @@ try{
    const response=await fetch(base+"/api/auth/sign-up/email",{method:"POST",headers:{"Content-Type":"application/json",Origin:base},body:JSON.stringify({name:"Audit "+role,email:emails[role],password})});
    assert(response.ok,"create isolated "+role+" account");
  }
- await db.collection("users").updateOne({email:emails.admin},{$set:{role:"ADMIN"}});
+ await db.collection("user").updateOne({email:emails.admin},{$set:{role:"ADMIN"}});
  await navigate("/dashboard/favorites?audit=1");await evaluate("sessionStorage.clear();localStorage.clear()");
  await until("location.pathname==='/login'");
  assert(await evaluate("new URLSearchParams(location.search).get('next')==='/dashboard/favorites?audit=1'"),"protected route preserves query callback");
@@ -81,7 +81,7 @@ try{
  await login("seller","/become-a-vendor");
  await fields({displayName:marker,businessName:"Audit Motors",phoneNumber:"+2348000000000",state:"Lagos",city:"Ikeja",description:"Isolated seller profile for action audit."});
  await click("Create seller profile");await until("location.pathname==='/vendor'","seller application navigation");
- const seller=await db.collection("users").findOne({email:emails.seller});
+ const seller=await db.collection("user").findOne({email:emails.seller});
  const vendor=await db.collection("vendorprofiles").findOne({userId:String(seller._id)});
  assert(vendor?.location?.city==="Ikeja"&&vendor?.location?.state==="Lagos","seller location persists in canonical nested fields");
  vendorId=vendor._id;
@@ -129,7 +129,7 @@ try{
  await navigate("/cars/"+car.slug);
  await fields({message:"Isolated audit inquiry. No action required.",kind:"AVAILABILITY"});await click("Contact vendor");
  await until("document.body.innerText.includes('Inquiry sent.')","inquiry success feedback");
- const buyer=await db.collection("users").findOne({email:emails.buyer});
+ const buyer=await db.collection("user").findOne({email:emails.buyer});
  assert(await db.collection("inquiries").countDocuments({buyerId:String(buyer._id),vehicleId:String(carId)})===1,"inquiry is persisted once");
  await navigate("/car-adviser");
  await click("Start my decision ?");
@@ -155,19 +155,19 @@ try{
  console.log("ACTION AUDIT PASSED");
 }finally{
  // Restrict every cleanup query to the unique test users and their related IDs.
- const users=await db.collection("users").find({email:{$in:Object.values(emails)}}).toArray();
+ const users=await db.collection("user").find({email:{$in:Object.values(emails)}}).toArray();
  const ids=users.flatMap(user=>[user._id,String(user._id)]);
  const vendors=await db.collection("vendorprofiles").find({userId:{$in:ids}}).toArray();
  const vendorIds=vendors.map(vendor=>vendor._id);
  const vehicles=await db.collection("vehicles").find({vendorId:{$in:vendorIds}}).toArray();
  const vehicleIds=vehicles.map(vehicle=>String(vehicle._id));
- for(const name of ["sessions","accounts","favorites","advisersessions"])await db.collection(name).deleteMany({userId:{$in:ids}});
+ for(const name of ["session","account","favorites","advisersessions"])await db.collection(name).deleteMany({userId:{$in:ids}});
  await db.collection("inquiries").deleteMany({buyerId:{$in:ids}});
  await db.collection("auditlogs").deleteMany({actorId:{$in:ids}});
  await db.collection("auditlogs").deleteMany({targetId:{$in:[...vehicleIds,...vendorIds.map(String)]}});
  await db.collection("vehicles").deleteMany({vendorId:{$in:vendorIds}});
  await db.collection("vendorprofiles").deleteMany({userId:{$in:ids}});
- await db.collection("users").deleteMany({email:{$in:Object.values(emails)}});
+ await db.collection("user").deleteMany({email:{$in:Object.values(emails)}});
  await send("Network.clearBrowserCookies").catch(()=>{});
  ws.close();await client.close();
  console.log("Isolated audit records cleaned up.");

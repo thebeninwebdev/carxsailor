@@ -8,7 +8,7 @@ import {favoriteAction} from "@/lib/buyer-actions";
 import {useMotionPolicy} from "@/components/motion/use-motion-policy";
 import {timing} from "@/lib/motion";
 export function FavoriteButton({vehicleId}:{vehicleId:string}){
-  const {reduced}=useMotionPolicy();const router=useRouter();const {data:session,status:sessionStatus}=useSession();const isPending=sessionStatus==="loading";
+  const {reduced}=useMotionPolicy();const router=useRouter();const {data:session,isPending}=useSession();
   const userId=session?.user.id;
   const key=(userId??"")+":"+vehicleId;
   const [status,setStatus]=useState({key:"",saved:false});

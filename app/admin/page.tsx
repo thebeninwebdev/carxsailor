@@ -10,7 +10,7 @@ export default async function Page(){
   await requireAdmin();
   await connectMongoose();
   const[users,pendingVendors,activeCars,pendingListings]=await Promise.all([
-    authDatabase.collection("users").countDocuments(),
+    authDatabase.collection("user").countDocuments(),
     VendorProfileModel.countDocuments({status:"PENDING"}),
     VehicleModel.countDocuments({status:"ACTIVE"}),
     VehicleModel.countDocuments({status:"PENDING_REVIEW"}),

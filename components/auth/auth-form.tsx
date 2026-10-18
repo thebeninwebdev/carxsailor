@@ -1,31 +1,16 @@
 "use client";
 import Link from "next/link";
-import {useState} from "react";
-import {signIn} from "@/lib/auth-client";
+import {unstable_rethrow} from "next/navigation";
+import {useActionState,useRef,useState} from "react";
+import {authClient,signIn,signUp} from "@/lib/auth-client";
 import {safeNext} from "@/lib/safe-next";
+import {completeSignIn} from "@/lib/actions";
+import type {ActionState} from "@/lib/mutation-result";
 export function AuthForm({mode,redirectTo=""}:{mode:"login"|"register";redirectTo?:string}){
-  const destination=safeNext(redirectTo,"");
-  const [pending,setPending]=useState(false);
-  const [message,setMessage]=useState("");
-  const [error,setError]=useState("");
-  async function submit(form:FormData){
-    setPending(true);setError("");setMessage("");
-    try{
-      await signIn("resend",{email:String(form.get("email")),redirect:false,redirectTo:destination||"/dashboard"});
-      setMessage("Check your inbox for a secure sign-in link.");
-    }catch{setError("We could not send a sign-in link. Please try again.");}
-    finally{setPending(false);}
-  }
+  const destination=safeNext(redirectTo,"");const locked=useRef(false);const [createdEmail,setCreatedEmail]=useState("");const [verificationRequired,setVerificationRequired]=useState(false);
+  const [state,action,pending]=useActionState<ActionState,FormData>(async(_previous,form)=>{try{const email=String(form.get("email")),password=String(form.get("password"));setCreatedEmail(email);setVerificationRequired(false);const result=mode==="login"?await signIn.email({email,password}):await signUp.email({email,password,name:String(form.get("name")),callbackURL:"/verify-email"});if(result.error){locked.current=false;if(mode==="login"&&result.error.code==="EMAIL_NOT_VERIFIED"){setVerificationRequired(true);return {error:"Verify your email before signing in. If the email did not arrive, request another link below."};}return {error:result.error.message||"Authentication failed."};}if(mode==="register")return {message:"Account created. Check your inbox and verify your email before signing in."};}catch{locked.current=false;return {error:"Could not sign in. Check your connection and try again."};}try{return await completeSignIn(destination);}catch(error){unstable_rethrow(error);return {error:"Could not verify your session. Please try again."};}finally{locked.current=false;}},{});
   const other=(mode==="login"?"/register":"/login")+(destination?"?next="+encodeURIComponent(destination):"");
-  return <div className="grid gap-4">
-    <button type="button" disabled={pending} onClick={()=>signIn("google",{redirectTo:destination||"/dashboard"})} className="btn btn-light w-full">Continue with Google</button>
-    <p className="text-center text-xs font-bold uppercase tracking-wider text-[#69756f]">or email link</p>
-    <form action={submit} className="grid gap-4">
-    <label><span className="label">Email address</span><input disabled={pending} className="input" name="email" type="email" required autoComplete="email"/></label>
-    {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-    {message&&<p role="status" className="rounded-lg bg-green-50 p-3 text-sm text-green-900">{message}</p>}
-    <button disabled={pending} className="btn btn-dark">{pending?"Sending link...":"Email me a sign-in link"}</button>
-    </form>
-    <p className="text-center text-sm text-[#68756f]">{mode==="login"?"New to CarXSailor? ":"Already have an account? "}<Link className="font-bold text-[#245c47]" href={other}>{mode==="login"?"Create account":"Sign in"}</Link></p>
-  </div>;
+  async function google(){await authClient.signIn.social({provider:"google",callbackURL:"/auth/complete"+(destination?"?next="+encodeURIComponent(destination):"")});}
+  if(mode==="register"&&state.message)return <div role="status" className="rounded-xl bg-green-50 p-5 text-sm text-green-900"><p className="font-bold">Check your email</p><p className="mt-2">{state.message}</p><Link className="btn btn-dark mt-5 w-full" href={"/verify-email?email="+encodeURIComponent(createdEmail)}>Resend verification email</Link><Link className="mt-4 block text-center font-bold text-[#245c47]" href="/login">Back to sign in</Link></div>;
+  return <form action={action} onReset={event=>event.preventDefault()} onSubmit={event=>{if(locked.current||pending)event.preventDefault();else locked.current=true;}} className="grid gap-4">{mode==="register"&&<label><span className="label">Full name</span><input disabled={pending} className="input" name="name" minLength={2} required autoComplete="name"/></label>}<label><span className="label">Email address</span><input disabled={pending} className="input" name="email" type="email" required autoComplete="email"/></label><label><span className="label">Password</span><input disabled={pending} className="input" name="password" type="password" minLength={8} required autoComplete={mode==="login"?"current-password":"new-password"}/></label>{mode==="login"&&<Link className="text-sm font-bold text-[#245c47]" href="/forgot-password">Forgot password?</Link>}{state.error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{state.error}</p>}{verificationRequired&&<Link className="btn btn-light w-full" href={"/verify-email?email="+encodeURIComponent(createdEmail)}>Resend verification email</Link>}<button disabled={pending} className="btn btn-dark">{pending?(mode==="login"?"Signing in...":"Creating account..."):mode==="login"?"Sign in":"Create account"}</button><button type="button" disabled={pending} onClick={()=>void google()} className="btn btn-light">Continue with Google</button><p className="text-center text-sm text-[#68756f]">{mode==="login"?"New to CarXSailor? ":"Already have an account? "}<Link className="font-bold text-[#245c47]" href={other}>{mode==="login"?"Create account":"Sign in"}</Link></p></form>;
 }
