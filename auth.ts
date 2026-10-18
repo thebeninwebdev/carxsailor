@@ -12,7 +12,14 @@ export const {handlers, auth} = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.BETTER_AUTH_SECRET,
   adapter: MongoDBAdapter(mongoClient),
   providers: [
-    Google,
+    Google({
+      // Google is the sole provider trusted to prove an existing email identity.
+      allowDangerousEmailAccountLinking: true,
+      profile(profile) {
+        if (!profile.email_verified) throw new Error("GOOGLE_EMAIL_NOT_VERIFIED");
+        return {id: profile.sub, name: profile.name, email: profile.email.trim().toLowerCase(), image: profile.picture};
+      },
+    }),
     Resend({
       apiKey: process.env.RESEND_API_KEY,
       from: process.env.EMAIL_FROM,

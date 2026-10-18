@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
+    "auth:migrate": "tsx scripts/migrate-better-auth-users.ts",
     "email:test": "node --conditions=react-server --import tsx scripts/test-email.ts"
   },
   "dependencies": {
