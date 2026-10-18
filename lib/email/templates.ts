@@ -5,7 +5,7 @@ export function escapeHtml(value: string) {
 export type ListingEmailKind = "car-submitted" | "car-approved" | "car-rejected" | "car-resubmitted";
 export type EmailTemplate =
   | {kind: "welcome"; name?: string; url: string}
-  | {kind: "verification" | "password-reset"; name?: string; url: string; expiresInMinutes: number}
+  | {kind: "verification" | "password-reset" | "magic-link"; name?: string; url: string; expiresInMinutes: number}
   | {kind: ListingEmailKind; name?: string; title: string; reference: string; url?: string; reason?: string}
   | {kind: "inquiry"; name?: string; title: string; reference: string; url: string}
   | {kind: "admin-inquiry"; customerName?: string; customerEmail: string; title: string; price: string; message: string; reference: string; listingReference: string; submittedAt: string; adminUrl: string; listingUrl: string};
@@ -30,6 +30,8 @@ export function renderEmail(props: EmailTemplate): RenderedEmail {
       return layout("Verify your CarXSailor email", [greeting, "Please verify your email address to confirm that it belongs to you.", `This verification link expires in ${props.expiresInMinutes} minutes. If you did not create this account, you can ignore this email.`], {label:"Verify Email", url:props.url});
     case "password-reset":
       return layout("Reset your CarXSailor password", [greeting, "We received a request to reset your CarXSailor password.", `This reset link expires in ${props.expiresInMinutes} minutes. If you didn't request this, you can ignore this email. Your password will stay the same.`], {label:"Reset Password", url:props.url});
+    case "magic-link":
+      return layout("Sign in to CarXSailor", [greeting, "Use this secure link to sign in to your CarXSailor account.", `This link expires in ${props.expiresInMinutes} minutes and can only be used once.`], {label:"Sign In", url:props.url});
     case "car-submitted":
     case "car-resubmitted":
       return layout(props.kind === "car-submitted" ? "Your CarXSailor listing has been submitted" : "Your CarXSailor listing has been resubmitted", [greeting, `Your listing for ${props.title} has been submitted successfully and is awaiting review.`, "Listing reference: " + props.reference, "You can check its status in your seller workspace."], props.url ? {label:"View Listing", url:props.url} : undefined);

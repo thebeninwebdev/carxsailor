@@ -1,5 +1,4 @@
 import "server-only";
-import {APIError} from "better-auth/api";
 import {renderEmail} from "./templates";
 import {sendTransactionalEmail} from "./send-email";
 export const authLinkExpiresIn = 3600;
@@ -10,8 +9,5 @@ export async function sendAuthEmail(kind: "verification" | "password-reset", {us
     to:user.email, template:kind,
     ...renderEmail({kind, name:user.name, url, expiresInMinutes:authLinkExpiresIn / 60}),
   });
-  if (!result.success) throw new APIError("SERVICE_UNAVAILABLE", {
-    message:"We could not send the email. Please try again later or contact the site administrator.",
-    code:"EMAIL_DELIVERY_FAILED",
-  });
+  if (!result.success) throw Object.assign(new Error("We could not send the email. Please try again later or contact the site administrator."), {statusCode:503,body:{code:"EMAIL_DELIVERY_FAILED"}});
 }

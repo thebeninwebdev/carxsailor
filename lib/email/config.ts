@@ -23,7 +23,7 @@ export function adminNotificationEmail(env:Environment=process.env){
   return email;
 }
 export function appUrl(path="/",env:Environment=process.env){
-  const configured=env.NEXT_PUBLIC_APP_URL||env.BETTER_AUTH_URL;
+  const configured=env.NEXT_PUBLIC_APP_URL||env.AUTH_URL;
   if(!configured&&env.NODE_ENV==="production")throw new Error("Set NEXT_PUBLIC_APP_URL for application email links.");
   const base=new URL(configured||"http://localhost:3000");
   if(!["https:","http:"].includes(base.protocol)||base.username||base.password||base.search||base.hash||base.pathname!=="/")throw new Error("The application URL must be a valid HTTP(S) origin.");
