@@ -20,7 +20,7 @@ describe("email routing",()=>{
     expect(mocks.send.mock.calls[0][0].html).not.toContain("Intended recipient");
     expect(console.info).toHaveBeenCalledWith("[Email]",{template:"welcome",resendId:"email-id"});
   });
-  it("uses the verified sender address as the admin inbox fallback",()=>expect(adminNotificationEmail({EMAIL_FROM_ADDRESS:"admin@swiftdu.example"})).toBe("admin@swiftdu.example"));
+  it("uses the CarXSailor support inbox as the admin notification fallback",()=>expect(adminNotificationEmail({EMAIL_FROM_ADDRESS:"admin@swiftdu.example"})).toBe("support@carxsailor.com"));
   it("supports the original combined sender variable",()=>{
     expect(emailConfig({EMAIL_FROM:"CarXSailor <noreply@verified.example.com>"}).from).toBe("CarXSailor <noreply@verified.example.com>");
   });

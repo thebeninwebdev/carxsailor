@@ -17,7 +17,7 @@ export default async function Page({params}:{params:Promise<{id:string}>}){
   return <ActionForm kind="editListing" className="card grid gap-4 p-7" pendingLabel="Saving listing..."><h2 className="text-xl font-bold">Edit {car.title}</h2>
     <p className="text-sm text-[#68756f]">Changes are submitted for admin review before the listing goes live.</p>
     <input type="hidden" name="id" value={id}/>
-    <ListingFields values={{make:car.make,model:car.model,year:car.year,price:car.price,mileage:car.mileage,city:car.location?.city??"",transmission:car.transmission,description:car.description}}/>
+    <ListingFields values={{make:car.make,model:car.model,year:car.year,sellerPrice:car.sellerPrice,mileage:car.mileage,city:car.location?.city??"",transmission:car.transmission,description:car.description}}/>
     <SubmitButton pendingLabel="Saving..." className="btn btn-dark">Save changes</SubmitButton>
   </ActionForm>;
 }

@@ -10,11 +10,11 @@ vi.mock("./invalidation",()=>({invalidateInventory:mocks.invalidate,invalidateVe
 vi.mock("./storage/provider",()=>({getImageStorageProvider:vi.fn(),validateVehicleImage:vi.fn()}));
 vi.mock("mongoose",()=>({default:{connection:{transaction:async(fn:(session:object)=>Promise<void>)=>fn({})}}}));
 vi.mock("@/models/Vehicle",()=>({VehicleModel:{
-  findById:()=>({session:()=>({lean:mocks.car})}),updateOne:mocks.update,
+  findById:()=>({session:()=>({lean:mocks.car}),select:()=>({lean:mocks.car})}),updateOne:mocks.update,
 }}));
 vi.mock("@/models/VendorProfile",()=>({VendorProfileModel:{exists:()=>({session:mocks.vendorExists})}}));
 vi.mock("@/models/AuditLog",()=>({AuditLogModel:{create:mocks.audit}}));
-import {moderate} from "./mutations";
+import {adminEditListing,moderate} from "./mutations";
 import {notifyListingOwner} from "./email/notifications";
 import {scheduleNotification} from "./email/schedule";
 const afterResponse=vi.hoisted(()=>vi.fn());
@@ -22,6 +22,7 @@ vi.mock("next/server",()=>({after:afterResponse}));
 function form(id="123456789012345678901234"){
   const value=new FormData();value.set("targetType","VEHICLE");value.set("targetId",id);value.set("action","APPROVE_LISTING");return value;
 }
+function adminForm(){const value=new FormData();for(const [key,item] of Object.entries({id:"123456789012345678901234",make:"Toyota",model:"Camry",year:"2021",sellerPrice:"12000000",mileage:"35000",transmission:"AUTOMATIC",fuelType:"PETROL",bodyType:"SEDAN",origin:"FOREIGN_USED",country:"Nigeria",state:"Lagos",city:"Ikeja",description:"A well maintained and carefully inspected car for daily driving.",inspectionStatus:"VERIFIED_INSPECTION"}))value.set(key,item);return value}
 beforeEach(()=>{
   vi.clearAllMocks();
   mocks.user.mockResolvedValue({id:"admin",role:"ADMIN"});
@@ -75,4 +76,12 @@ it("keeps a successful approval when the notification fails after the response",
   expect(mocks.update).toHaveBeenCalledOnce();
   expect(mocks.update.mock.calls[0][1].$set.status).toBe("ACTIVE");
   error.mockRestore();
+});
+
+describe("admin listing edits",()=>{
+  beforeEach(()=>{mocks.car.mockResolvedValue({status:"ACTIVE",isFeatured:true,updatedAt:new Date(0),features:[],condition:{},vin:"secret"});mocks.update.mockResolvedValue({matchedCount:1})});
+  it("preserves moderation and featured state while recording a safe audit",async()=>{const result=await adminEditListing(adminForm());const update=mocks.update.mock.calls[0][1].$set;expect(update.sellerPrice).toBe(12000000);expect(update.price).toBe(12180000);expect(update.status).toBeUndefined();expect(update.isFeatured).toBeUndefined();expect(mocks.audit).toHaveBeenCalledWith(expect.objectContaining({action:"EDIT_LISTING",metadata:expect.objectContaining({changedFields:expect.any(Array)})}));expect(mocks.invalidate).toHaveBeenCalledOnce();expect(result.destination).toBe("/admin/cars/123456789012345678901234")});
+  it.each(["PENDING_REVIEW","REJECTED","SUSPENDED"])('does not change %s status',async status=>{mocks.car.mockResolvedValue({status,isFeatured:false,updatedAt:new Date(0),features:[],condition:{}});await adminEditListing(adminForm());expect(mocks.update.mock.calls[0][1].$set.status).toBeUndefined()});
+  it("updates the derived title without changing the slug",async()=>{const form=adminForm();form.set("year","2022");await adminEditListing(form);const update=mocks.update.mock.calls[0][1].$set;expect(update.title).toBe("2022 Toyota Camry");expect(update.slug).toBeUndefined()});
+  it("rejects invalid scores, unauthorized users, and stale writes",async()=>{const bad=adminForm();bad.set("conditionEngine","150");await expect(adminEditListing(bad)).rejects.toMatchObject({status:422});mocks.user.mockResolvedValue({id:"buyer",role:"BUYER"});await expect(adminEditListing(adminForm())).rejects.toMatchObject({status:403});mocks.user.mockResolvedValue({id:"admin",role:"ADMIN"});mocks.update.mockResolvedValue({matchedCount:0});await expect(adminEditListing(adminForm())).rejects.toMatchObject({status:409})});
 });

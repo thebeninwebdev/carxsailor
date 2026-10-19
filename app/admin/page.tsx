@@ -1,24 +1,10 @@
+import Link from "next/link";
+import {Car,CheckCircle2,Clock3,FileCheck2,MessageSquare,Store,Users,ArrowUpRight,ShieldCheck} from "lucide-react";
 import {requireAdmin} from "@/lib/auth";
-import {Metric} from "@/components/dashboard/shell";
 import {authDatabase,connectMongoose} from "@/lib/db";
 import {VehicleModel} from "@/models/Vehicle";
 import {VendorProfileModel} from "@/models/VendorProfile";
-
+import {InquiryModel} from "@/models/Inquiry";
+import {money} from "@/lib/utils";
 export const dynamic="force-dynamic";
-
-export default async function Page(){
-  await requireAdmin();
-  await connectMongoose();
-  const[users,pendingVendors,activeCars,pendingListings]=await Promise.all([
-    authDatabase.collection("user").countDocuments(),
-    VendorProfileModel.countDocuments({status:"PENDING"}),
-    VehicleModel.countDocuments({status:"ACTIVE"}),
-    VehicleModel.countDocuments({status:"PENDING_REVIEW"}),
-  ]);
-  return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    <Metric label="Total users" value={users} detail="Better Auth users"/>
-    <Metric label="Pending vendors" value={pendingVendors} detail="Needs review"/>
-    <Metric label="Active cars" value={activeCars} detail="Public inventory"/>
-    <Metric label="Pending listings" value={pendingListings} detail="Needs moderation"/>
-  </div>
-}
+export default async function Page(){await requireAdmin();await connectMongoose();const[users,pendingVendors,approvedVendors,activeCars,pendingListings,inquiries,recent,pendingCars]=await Promise.all([authDatabase.collection("user").countDocuments(),VendorProfileModel.countDocuments({status:"PENDING"}),VendorProfileModel.countDocuments({status:"APPROVED"}),VehicleModel.countDocuments({status:"ACTIVE"}),VehicleModel.countDocuments({status:"PENDING_REVIEW"}),InquiryModel.countDocuments(),VehicleModel.find({}).sort({createdAt:-1}).limit(5).select("title price status mileage transmission location images vendorId").lean(),VehicleModel.countDocuments({status:"PENDING_REVIEW"})]);const vendorIds=[...new Set(recent.map(car=>String(car.vendorId)))];const vendors=await VendorProfileModel.find({_id:{$in:vendorIds}}).select("displayName status").lean();const sellerNames=new Map(vendors.map(vendor=>[String(vendor._id),vendor.displayName]));const metrics=[{label:"Total cars",value:activeCars+pendingListings,detail:"Marketplace inventory",icon:Car,tone:"green"},{label:"Pending review",value:pendingListings,detail:"Awaiting moderation",icon:Clock3,tone:"amber"},{label:"Active listings",value:activeCars,detail:"Currently public",icon:CheckCircle2,tone:"green"},{label:"Verified sellers",value:approvedVendors,detail:"Approved profiles",icon:ShieldCheck,tone:"blue"},{label:"Total inquiries",value:inquiries,detail:"Buyer conversations",icon:MessageSquare,tone:"purple"},{label:"Platform users",value:users,detail:"Buyers and sellers",icon:Users,tone:"rose"}];return <div className="admin-overview"><section className="admin-intro"><div><p className="eyebrow">PLATFORM OPERATIONS</p><h2>Dashboard</h2><p>Review marketplace health, moderation workload, and the latest activity.</p></div><div><CheckCircle2/><span><b>Platform status</b><small>Core systems operational</small></span></div></section><section className="admin-metrics">{metrics.map(({label,value,detail,icon:Icon,tone})=><article key={label} className={`admin-metric ${tone}`}><span><Icon size={22}/></span><div><small>{label}</small><b>{value.toLocaleString()}</b><p>{detail}</p></div></article>)}</section><section className="admin-grid"><article className="admin-panel admin-queue"><div className="admin-panel-title"><div><p className="eyebrow">MODERATION</p><h3>Pending approvals</h3></div><Link href="/admin/cars?status=PENDING_REVIEW">View queue <ArrowUpRight size={15}/></Link></div><div className="admin-queue-row"><Car/><div><b>{pendingCars} cars</b><small>Awaiting listing review</small></div><Link href="/admin/cars?status=PENDING_REVIEW">Review</Link></div><div className="admin-queue-row"><Store/><div><b>{pendingVendors} sellers</b><small>Awaiting profile approval</small></div><Link href="/admin/vendors?status=PENDING">Review</Link></div></article><article className="admin-panel"><div className="admin-panel-title"><div><p className="eyebrow">QUICK ACTIONS</p><h3>Keep the marketplace moving</h3></div></div><div className="admin-actions"><Link href="/admin/cars?status=PENDING_REVIEW"><Car/>Review cars</Link><Link href="/admin/vendors?status=PENDING"><Store/>Approve sellers</Link><Link href="/admin/inquiries"><MessageSquare/>View inquiries</Link><Link href="/admin/users"><Users/>Manage users</Link></div></article></section><section className="admin-panel admin-recent"><div className="admin-panel-title"><div><p className="eyebrow">LATEST INVENTORY</p><h3>Recent cars</h3></div><Link href="/admin/cars">View all <ArrowUpRight size={15}/></Link></div><div className="admin-table">{recent.map(car=><Link href={`/admin/cars/${car._id}`} key={String(car._id)}><div className="admin-thumb">{car.images?.[0]?.url?<img src={car.images[0].url} alt=""/>:<Car size={20}/>}</div><div><b>{car.title}</b><small>{car.mileage.toLocaleString()} km · {car.transmission} · {car.location?.city||"Nigeria"}</small></div><strong>{money(car.price)}</strong><span>{sellerNames.get(String(car.vendorId))||"Seller"}</span><em className={car.status.toLowerCase()}>{car.status.replaceAll("_"," ")}</em><ArrowUpRight size={17}/></Link>)}</div></section></div>}

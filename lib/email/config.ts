@@ -1,5 +1,6 @@
 import "server-only";
 import {z} from "zod";
+import {supportEmail} from "@/lib/contact";
 type Environment=Record<string,string|undefined>;
 const fallbackSender="CarXSailor <onboarding@resend.dev>";
 export function emailConfig(env:Environment=process.env){
@@ -18,8 +19,8 @@ export function getEmailRecipient(to:string){
   return to;
 }
 export function adminNotificationEmail(env:Environment=process.env){
-  const email=env.ADMIN_NOTIFICATION_EMAIL?.trim()||env.EMAIL_FROM_ADDRESS?.trim();
-  if(!email||!z.email().safeParse(email).success)throw new Error("Set ADMIN_NOTIFICATION_EMAIL or EMAIL_FROM_ADDRESS to a valid admin address. The inquiry remains saved, but no admin notification was sent.");
+  const email=env.ADMIN_NOTIFICATION_EMAIL?.trim()||supportEmail;
+  if(!z.email().safeParse(email).success)throw new Error("Set ADMIN_NOTIFICATION_EMAIL to a valid admin address. The inquiry remains saved, but no admin notification was sent.");
   return email;
 }
 export function appUrl(path="/",env:Environment=process.env){

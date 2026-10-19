@@ -13,12 +13,13 @@ import {VendorProfileModel} from "@/models/VendorProfile";
 import {AuditLogModel} from "@/models/AuditLog";
 import {getImageStorageProvider, validateVehicleImage} from "./storage/provider";
 import type {VehicleStatus} from "@/types";
+import {calculateVehiclePrice} from "./pricing";
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid listing ID.");
 export const listingSchema = z.object({
   make:z.string().trim().min(2).max(60), model:z.string().trim().min(1).max(60),
   year:z.coerce.number().int().min(1950).max(new Date().getFullYear()+1),
-  price:z.coerce.number().positive(), mileage:z.coerce.number().nonnegative(),
+  sellerPrice:z.coerce.number().positive(), mileage:z.coerce.number().nonnegative(),
   city:z.string().trim().min(2).max(60), transmission:z.enum(["AUTOMATIC","MANUAL","CVT","OTHER"]),
   description:z.string().trim().min(30).max(5000),
 });
@@ -90,7 +91,7 @@ export async function moderate(form:FormData):Promise<MutationSuccess> {
 }
 export async function createListing(form:FormData):Promise<MutationSuccess> {
   const {vendor}=await seller();
-  const v=parse(listingSchema,Object.fromEntries(form));
+  const v=parse(listingSchema,{...Object.fromEntries(form),sellerPrice:form.get("sellerPrice")??form.get("price")});
   const imageUrl=parse(z.union([z.literal(""),z.url({protocol:/https?/})]),form.get("imageUrl")??"");
   const files=form.getAll("imageFile").filter((file):file is File=>file instanceof File&&file.size>0);
   if(files.length>10) throw new MutationError("Upload at most 10 images per listing.");
@@ -111,8 +112,8 @@ export async function createListing(form:FormData):Promise<MutationSuccess> {
       if(failed?.status==="rejected") throw failed.reason;
     }
     if(imageUrl) images.push({url:imageUrl,alt:title});
-    const {city,...details}=v;
-    const created=await VehicleModel.create({_id:vehicleId,...details,vendorId:vendor._id,title,
+    const {city,sellerPrice,...details}=v;const pricing=calculateVehiclePrice(sellerPrice);
+    const created=await VehicleModel.create({_id:vehicleId,...details,...pricing,vendorId:vendor._id,title,
       slug:(title+"-"+randomUUID()).toLowerCase().replace(/[^a-z0-9]+/g,"-"),
       location:{country:"Nigeria",state:vendor.location?.state,city},fuelType:"PETROL",bodyType:"OTHER",
       images:images.map((image,order)=>({...image,isPrimary:order===0,order})),
@@ -130,18 +131,46 @@ export async function createListing(form:FormData):Promise<MutationSuccess> {
 export async function editListing(form:FormData):Promise<MutationSuccess> {
   const {vendor}=await seller();
   const id=parse(objectId,form.get("id"));
-  const v=parse(listingSchema,Object.fromEntries(form));
+  const v=parse(listingSchema,{...Object.fromEntries(form),sellerPrice:form.get("sellerPrice")??form.get("price")});
   const car=await VehicleModel.findOne({_id:id,vendorId:vendor._id}).lean();
   if(!car) throw new MutationError("Listing not found.",404);
   if(!["DRAFT","REJECTED","PENDING_REVIEW","ACTIVE","SUSPENDED"].includes(car.status)) throw new MutationError("This listing cannot be edited in its current status.",409);
-  const {city,...details}=v;
+  const {city,sellerPrice,...details}=v;const pricing=calculateVehiclePrice(sellerPrice);
   const result=await VehicleModel.updateOne({_id:id,vendorId:vendor._id,updatedAt:car.updatedAt},
-    {$set:{...details,title:`${v.year} ${v.make} ${v.model}`,"location.city":city,status:"PENDING_REVIEW",isFeatured:false}},
+    {$set:{...details,...pricing,title:`${v.year} ${v.make} ${v.model}`,"location.city":city,status:"PENDING_REVIEW",isFeatured:false}},
     {runValidators:true});
   if(result.matchedCount!==1) throw new MutationError("The listing changed. Reload and try again.",409);
   invalidateInventory();
   if(car.status!=="PENDING_REVIEW") notifyListingOwner("car-resubmitted",id);
   return {destination:"/vendor/cars/"+id,message:"Listing updated and submitted for review."};
+}
+const optionalText=(max:number)=>z.preprocess(value=>typeof value==="string"&&value.trim()===""?undefined:value,z.string().trim().max(max).optional());
+const optionalScore=z.preprocess(value=>value===""||value===null?undefined:value,z.coerce.number().min(0).max(100).optional());
+const adminListingSchema=z.object({
+  id:objectId,make:z.string().trim().min(2).max(60),model:z.string().trim().min(1).max(60),trim:optionalText(80),year:z.coerce.number().int().min(1950).max(new Date().getFullYear()+1),sellerPrice:z.coerce.number().positive(),mileage:z.coerce.number().nonnegative(),
+  transmission:z.enum(["AUTOMATIC","MANUAL","CVT","OTHER"]),fuelType:z.enum(["PETROL","DIESEL","HYBRID","ELECTRIC","OTHER"]),bodyType:z.enum(["SEDAN","SUV","HATCHBACK","COUPE","PICKUP","MINIVAN","WAGON","CONVERTIBLE","OTHER"]),origin:z.enum(["NIGERIAN_USED","FOREIGN_USED","BRAND_NEW"]).optional(),numberOfSeats:z.preprocess(value=>value===""?undefined:value,z.coerce.number().int().min(1).max(20).optional()),
+  country:z.string().trim().min(2).max(60),state:z.string().trim().min(2).max(60),city:z.string().trim().min(2).max(60),description:z.string().trim().min(30).max(5000),inspectionStatus:z.enum(["NOT_INSPECTED","VENDOR_REPORTED","VERIFIED_INSPECTION"]),accidentHistory:optionalText(2000),vin:optionalText(80),
+  conditionOverall:optionalScore,conditionEngine:optionalScore,conditionTransmission:optionalScore,conditionSuspension:optionalScore,conditionBrakes:optionalScore,conditionAirConditioning:optionalScore,conditionBody:optionalScore,conditionInterior:optionalScore,conditionTyres:optionalScore,
+  fuelEconomyRating:optionalScore,reliabilityRating:optionalScore,maintenanceCostRating:optionalScore,comfortRating:optionalScore,performanceRating:optionalScore,practicalityRating:optionalScore,
+});
+function changedFields(before:Record<string,unknown>,after:Record<string,unknown>){return Object.keys(after).filter(key=>JSON.stringify(before[key])!==JSON.stringify(after[key]));}
+export async function adminEditListing(form:FormData):Promise<MutationSuccess> {
+  const user=await actor();
+  if(user.role!=="ADMIN") throw new MutationError("Administrator access is required.",403);
+  const raw=Object.fromEntries(form);
+  const input=parse(adminListingSchema,raw);
+  const features=[...new Set(form.getAll("feature").filter((value):value is string=>typeof value==="string").map(value=>value.trim()).filter(Boolean))].slice(0,50);
+  const car=await VehicleModel.findById(input.id).select("+vin").lean();
+  if(!car) throw new MutationError("Listing not found.",404);
+  const condition={overall:input.conditionOverall,engine:input.conditionEngine,transmission:input.conditionTransmission,suspension:input.conditionSuspension,brakes:input.conditionBrakes,airConditioning:input.conditionAirConditioning,body:input.conditionBody,interior:input.conditionInterior,tyres:input.conditionTyres};
+  const ratings={fuelEconomyRating:input.fuelEconomyRating,reliabilityRating:input.reliabilityRating,maintenanceCostRating:input.maintenanceCostRating,comfortRating:input.comfortRating,performanceRating:input.performanceRating,practicalityRating:input.practicalityRating};
+  const pricing=calculateVehiclePrice(input.sellerPrice);const update={make:input.make,model:input.model,trim:input.trim,year:input.year,...pricing,mileage:input.mileage,transmission:input.transmission,fuelType:input.fuelType,bodyType:input.bodyType,origin:input.origin,numberOfSeats:input.numberOfSeats,location:{country:input.country,state:input.state,city:input.city},description:input.description,features,condition,...ratings,inspectionStatus:input.inspectionStatus,accidentHistory:input.accidentHistory,vin:input.vin,title:`${input.year} ${input.make} ${input.model}`};
+  const changed=[...changedFields(car as unknown as Record<string,unknown>,update as Record<string,unknown>).filter(field=>field!=="condition"),...Object.entries(condition).filter(([field,value])=>JSON.stringify(car.condition?.[field as keyof typeof condition])!==JSON.stringify(value)).map(([field])=>"condition."+field)];
+  const result=await VehicleModel.updateOne({_id:input.id,updatedAt:car.updatedAt},{$set:update},{runValidators:true});
+  if(result.matchedCount!==1) throw new MutationError("The listing changed while you were editing it. Reload and try again.",409);
+  await AuditLogModel.create({actorId:user.id,action:"EDIT_LISTING",targetType:"VEHICLE",targetId:input.id,metadata:{changedFields:changed.filter(field=>field!=="vin"),...(changed.includes("vin")?{vinChanged:true}:{})}});
+  invalidateInventory();
+  return {destination:"/admin/cars/"+input.id,message:"Car information updated successfully."};
 }
 export async function submitListing(form:FormData):Promise<MutationSuccess> {
   const {vendor}=await seller();
@@ -169,4 +198,4 @@ export async function updateProfile(form:FormData):Promise<MutationSuccess> {
   invalidateVendor();
   return {destination:"/vendor/profile",message:"Seller profile updated."};
 }
-export const mutations:Record<MutationKind,(form:FormData)=>Promise<MutationSuccess>>={moderate,createListing,editListing,submitListing,applyVendor,updateProfile};
+export const mutations:Record<MutationKind,(form:FormData)=>Promise<MutationSuccess>>={moderate,createListing,editListing,adminEditListing,submitListing,applyVendor,updateProfile};

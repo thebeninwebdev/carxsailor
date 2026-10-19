@@ -13,6 +13,7 @@ import {connectMongoose} from "@/lib/db";
 import {VendorProfileModel} from "@/models/VendorProfile";
 import {Navbar} from "@/components/navigation/navbar";
 import {Footer} from "@/components/navigation/footer";
+import {SiteNavigationShell} from "@/components/navigation/site-navigation-shell";
 import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -38,5 +39,5 @@ export default async function RootLayout({children}:{children:React.ReactNode}){
   }
   let seller=false;
   if(verifiedUser){await connectMongoose();seller=!!await VendorProfileModel.exists({userId:verifiedUser.id});}
-  return <html lang="en" data-scroll-behavior="smooth"><body><SerwistProvider swUrl="/sw.js"><a className="skip-link" href="#main-content">Skip to content</a><MotionProvider><Navbar initialUser={verifiedUser?{name:verifiedUser.name,email:verifiedUser.email}:undefined} accountHref={seller?"/vendor":"/dashboard"}/><main id="main-content" tabIndex={-1}><Suspense><MutationNotice/></Suspense>{children}</main><Footer/><BackToTop/></MotionProvider></SerwistProvider></body></html>;
+  return <html lang="en" data-scroll-behavior="smooth"><body><SerwistProvider swUrl="/sw.js"><a className="skip-link" href="#main-content">Skip to content</a><MotionProvider><SiteNavigationShell initialUser={verifiedUser?{name:verifiedUser.name,email:verifiedUser.email}:undefined} accountHref={seller?"/vendor":"/dashboard"}><Navbar initialUser={verifiedUser?{name:verifiedUser.name,email:verifiedUser.email}:undefined} accountHref={seller?"/vendor":"/dashboard"}/><main id="main-content" tabIndex={-1}><Suspense><MutationNotice/></Suspense>{children}</main><Footer/><BackToTop/></SiteNavigationShell></MotionProvider></SerwistProvider></body></html>;
 }

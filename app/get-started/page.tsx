@@ -1,10 +1,4 @@
-import {redirect} from "next/navigation";
-import {getCurrentUser,getPostLoginDestination} from "@/lib/auth";
-
-export const metadata={title:"Get started",robots:{index:false,follow:false}};
-
-export default async function Page(){
-  const user=await getCurrentUser();
-  if(user)redirect(await getPostLoginDestination(user));
-  redirect("/car-adviser");
-}
+import Link from "next/link";
+import {Car,Search,Store} from "lucide-react";
+export const metadata={title:"Choose your path",robots:{index:false,follow:false}};
+export default function Page(){return <div className="container py-14 sm:py-20"><div className="mx-auto max-w-2xl text-center"><p className="eyebrow">CARXSAILOR</p><h1 className="display mt-4 text-5xl sm:text-6xl">What would you like to do?</h1><p className="mt-5 text-lg leading-8 text-[#68756f]">Whether you&apos;re looking for your next car or ready to sell one, we&apos;ll take you to the right place.</p></div><div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-2"><section className="card p-7 sm:p-9"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e8f2ec] text-[#245c47]"><Car/></span><p className="eyebrow mt-7">BUY A CAR</p><h2 className="display mt-3 text-3xl">I&apos;m looking for a car</h2><p className="mt-4 leading-7 text-[#68756f]">Browse available cars, compare your options, or let CarXSailor help you figure out what fits you.</p><ul className="mt-7 grid gap-3 text-sm"><li>Browse available cars</li><li>Compare your strongest options</li><li>Get personalised help choosing</li></ul><Link className="btn btn-dark mt-8" href="/cars">Browse cars</Link><Link className="mt-5 flex items-center gap-2 text-sm font-bold text-[#245c47]" href="/car-adviser"><Search size={16}/>Not sure what to buy? Help me choose</Link></section><section className="rounded-[28px] bg-[#163f31] p-7 text-white sm:p-9"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/10 text-[#d7f25c]"><Store/></span><p className="eyebrow mt-7 text-[#d7f25c]">SELL A CAR</p><h2 className="display mt-3 text-3xl">I want to sell a car</h2><p className="mt-4 leading-7 text-white/70">Create your seller profile, list your cars and connect with interested buyers.</p><ul className="mt-7 grid gap-3 text-sm text-white/85"><li>Create a trusted seller profile</li><li>List and manage your cars</li><li>Receive buyer inquiries</li></ul><Link className="btn btn-primary mt-8" href="/become-a-vendor">Start selling</Link></section></div></div>}

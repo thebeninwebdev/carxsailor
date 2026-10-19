@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
+    "cars:migrate-service-fee": "tsx scripts/apply-car-service-fee.ts",
     "email:test": "node --conditions=react-server --import tsx scripts/test-email.ts"
   },
   "dependencies": {
