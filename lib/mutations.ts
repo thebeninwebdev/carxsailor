@@ -16,13 +16,14 @@ import type {VehicleStatus} from "@/types";
 import {calculateVehiclePrice} from "./pricing";
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid listing ID.");
-export const listingSchema = z.object({
+const listingBase=z.object({
   make:z.string().trim().min(2).max(60), model:z.string().trim().min(1).max(60),
   year:z.coerce.number().int().min(1950).max(new Date().getFullYear()+1),
-  sellerPrice:z.coerce.number().positive(), mileage:z.coerce.number().nonnegative(),
+  rentalPricePerDay:z.coerce.number().positive(), mileage:z.coerce.number().nonnegative(),
   city:z.string().trim().min(2).max(60), transmission:z.enum(["AUTOMATIC","MANUAL","CVT","OTHER"]),
   description:z.string().trim().min(30).max(5000),
 });
+export const listingSchema=z.discriminatedUnion("listingType",[listingBase.extend({listingType:z.literal("SELL_AND_RENT"),sellerPrice:z.coerce.number().positive()}),listingBase.extend({listingType:z.literal("RENT_ONLY")})]);
 const vendorSchema = z.object({
   displayName:z.string().trim().min(2).max(100),
   nin:z.string().trim().regex(/^[0-9]{11}$/, "NIN must contain exactly 11 digits."),
@@ -112,8 +113,8 @@ export async function createListing(form:FormData):Promise<MutationSuccess> {
       if(failed?.status==="rejected") throw failed.reason;
     }
     if(imageUrl) images.push({url:imageUrl,alt:title});
-    const {city,sellerPrice,...details}=v;const pricing=calculateVehiclePrice(sellerPrice);
-    const created=await VehicleModel.create({_id:vehicleId,...details,...pricing,vendorId:vendor._id,title,
+    const sellerPrice=v.listingType==="SELL_AND_RENT"?v.sellerPrice:undefined;const {city,rentalPricePerDay,...details}=v;const pricing=sellerPrice?calculateVehiclePrice(sellerPrice):{};
+    const created=await VehicleModel.create({_id:vehicleId,...details,...pricing,rental:{enabled:true,pricePerDay:rentalPricePerDay},vendorId:vendor._id,title,
       slug:(title+"-"+randomUUID()).toLowerCase().replace(/[^a-z0-9]+/g,"-"),
       location:{country:"Nigeria",state:vendor.location?.state,city},fuelType:"PETROL",bodyType:"OTHER",
       images:images.map((image,order)=>({...image,isPrimary:order===0,order})),
@@ -135,9 +136,9 @@ export async function editListing(form:FormData):Promise<MutationSuccess> {
   const car=await VehicleModel.findOne({_id:id,vendorId:vendor._id}).lean();
   if(!car) throw new MutationError("Listing not found.",404);
   if(!["DRAFT","REJECTED","PENDING_REVIEW","ACTIVE","SUSPENDED"].includes(car.status)) throw new MutationError("This listing cannot be edited in its current status.",409);
-  const {city,sellerPrice,...details}=v;const pricing=calculateVehiclePrice(sellerPrice);
+  const sellerPrice=v.listingType==="SELL_AND_RENT"?v.sellerPrice:undefined;const {city,rentalPricePerDay,...details}=v;const pricing=sellerPrice?calculateVehiclePrice(sellerPrice):{};
   const result=await VehicleModel.updateOne({_id:id,vendorId:vendor._id,updatedAt:car.updatedAt},
-    {$set:{...details,...pricing,title:`${v.year} ${v.make} ${v.model}`,"location.city":city,status:"PENDING_REVIEW",isFeatured:false}},
+    {$set:{...details,...pricing,rental:{enabled:true,pricePerDay:rentalPricePerDay},title:`${v.year} ${v.make} ${v.model}`,"location.city":city,status:"PENDING_REVIEW",isFeatured:false},...(v.listingType==="RENT_ONLY"?{$unset:{sellerPrice:1,serviceFeeRate:1,serviceFeeAmount:1,price:1}}:{})},
     {runValidators:true});
   if(result.matchedCount!==1) throw new MutationError("The listing changed. Reload and try again.",409);
   invalidateInventory();
