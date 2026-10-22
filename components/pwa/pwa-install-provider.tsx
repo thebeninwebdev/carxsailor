@@ -1,0 +1,13 @@
+"use client";
+/* eslint-disable react-hooks/set-state-in-effect */
+import {createContext,useContext,useEffect,useMemo,useState} from "react";
+
+type DeferredPrompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:"accepted"|"dismissed"}>};
+type InstallState={status:"checking"|"installable"|"installed"|"unsupported"|"ios";install:()=>Promise<void>};
+const InstallContext=createContext<InstallState|null>(null);
+const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||(navigator as Navigator&{standalone?:boolean}).standalone===true;
+declare global {interface Window{__CARXSAILOR_DEFERRED_INSTALL_PROMPT__?:DeferredPrompt}}
+
+export function PWAInstallProvider({children}:{children:React.ReactNode}){const[deferred,setDeferred]=useState<DeferredPrompt|null>(null),[status,setStatus]=useState<InstallState["status"]>("checking");useEffect(()=>{const apple=isIOS();const sync=()=>setStatus(isStandalone()?"installed":apple?"ios":window.__CARXSAILOR_DEFERRED_INSTALL_PROMPT__?"installable":"unsupported");const capture=(event:Event)=>{event.preventDefault();window.__CARXSAILOR_DEFERRED_INSTALL_PROMPT__=event as DeferredPrompt;setDeferred(event as DeferredPrompt);setStatus("installable");if(process.env.NODE_ENV==="development")console.info("[PWA] beforeinstallprompt captured")};const installed=()=>{window.__CARXSAILOR_DEFERRED_INSTALL_PROMPT__=undefined;setDeferred(null);setStatus("installed");if(process.env.NODE_ENV==="development")console.info("[PWA] app installed")};const media=window.matchMedia("(display-mode: standalone)");setDeferred(window.__CARXSAILOR_DEFERRED_INSTALL_PROMPT__??null);sync();window.addEventListener("beforeinstallprompt",capture);window.addEventListener("appinstalled",installed);media.addEventListener("change",sync);return()=>{window.removeEventListener("beforeinstallprompt",capture);window.removeEventListener("appinstalled",installed);media.removeEventListener("change",sync)}},[]);const value=useMemo<InstallState>(()=>({status,install:async()=>{const prompt=deferred??window.__CARXSAILOR_DEFERRED_INSTALL_PROMPT__;if(!prompt)return;await prompt.prompt();const choice=await prompt.userChoice;if(choice.outcome==="accepted"){window.__CARXSAILOR_DEFERRED_INSTALL_PROMPT__=undefined;setDeferred(null);setStatus("installed")}else setDeferred(null)}}),[deferred,status]);return <InstallContext.Provider value={value}>{children}</InstallContext.Provider>}
+export function usePWAInstall(){const context=useContext(InstallContext);if(!context)throw new Error("usePWAInstall must be used inside PWAInstallProvider");return context}
