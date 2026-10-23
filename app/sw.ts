@@ -3,7 +3,7 @@
 
 import {defaultCache} from "@serwist/next/worker";
 import type {PrecacheEntry, SerwistGlobalConfig} from "serwist";
-import {Serwist} from "serwist";
+import {NetworkOnly, Serwist} from "serwist";
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -18,7 +18,16 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  // Serwist's default cache already makes /api/auth/* NetworkOnly. These
+  // document routes also read the Better Auth session, so never restore an
+  // old page after a sign-in or sign-out.
+  runtimeCaching: [
+    {
+      matcher: ({request, url}) => request.mode === "navigate" && /^(?:\/login|\/register|\/dashboard|\/vendor|\/admin|\/auth\/complete|\/verify-email)(?:\/|$)/.test(url.pathname),
+      handler: new NetworkOnly(),
+    },
+    ...defaultCache,
+  ],
   fallbacks: {
     entries: [
       {

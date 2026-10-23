@@ -1,6 +1,6 @@
 # CarXSailor
 
-[CarXSailor](https://carxsailor.vercel.app) is a vehicle marketplace for Nigeria with explained car recommendations. Buyers can browse listings, set a budget and priorities, compare up to three cars, and save cars or decisions in My Garage.
+[CarXSailor](https://carxsailor.com) is a vehicle marketplace for Nigeria with explained car recommendations. Buyers can browse listings, set a budget and priorities, compare up to three cars, and save cars or decisions in My Garage.
 
 ## Features
 
@@ -49,7 +49,7 @@ Promote an administrator by securely setting the intended Better Auth user's rol
 | `BETTER_AUTH_SECRET` | Authentication secret. |
 | `BETTER_AUTH_URL` | Authentication origin; match the application origin. |
 | `NEXT_PUBLIC_APP_URL` | Application origin used by authentication, email and listing links. |
-| `SITE_URL` | Canonical SEO origin. Defaults to `https://carxsailor.vercel.app`, independently of local application URLs. |
+| `SITE_URL` | Canonical SEO origin. Use `http://localhost:3000` locally and `https://carxsailor.com` in production. |
 | `GOOGLE_SITE_VERIFICATION` | Optional Search Console HTML verification token, using only the tag's content value. |
 | `CLOUDINARY_URL` | Server-only upload credentials; separate Cloudinary fields are also supported in `.env.example`. |
 | `RESEND_API_KEY` | Transactional email credentials. |
@@ -66,7 +66,7 @@ Never put secrets in variables prefixed with `NEXT_PUBLIC_`. See [email configur
 
 ## SEO and brand assets
 
-The canonical public site is **https://carxsailor.vercel.app**.
+The canonical public site is **https://carxsailor.com**.
 
 - `lib/seo.ts` centralizes canonical URLs, descriptions, Open Graph and Twitter cards, and safe JSON-LD serialization.
 - Public pages have distinct titles, descriptions and canonical URLs. Filter, sort, comparison and resume parameters canonicalize to their base page.
@@ -82,10 +82,10 @@ The setup follows Google's [favicon guidance](https://developers.google.com/sear
 ## Production deployment
 
 1. Configure MongoDB, authentication, image uploads and email in the hosting environment.
-2. Set `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL` and `SITE_URL` to `https://carxsailor.vercel.app` for production.
+2. Set `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL` and `SITE_URL` to `https://carxsailor.com` for production.
 3. Run the validation commands below, then deploy. Keep Vercel preview environments separate from production.
 4. Check `/favicon.ico`, `/icon.svg`, `/apple-icon.png`, `/manifest.webmanifest`, `/social-preview.png`, `/robots.txt` and `/sitemap.xml` on the deployed site.
-5. Verify the site in Google Search Console. Set `GOOGLE_SITE_VERIFICATION` and redeploy if using HTML-tag verification, then submit `https://carxsailor.vercel.app/sitemap.xml`.
+5. Verify the site in Google Search Console. Set `GOOGLE_SITE_VERIFICATION` and redeploy if using HTML-tag verification, then submit `https://carxsailor.com/sitemap.xml`.
 6. Inspect a real listing with Google's Rich Results Test and check social link previews. Confirm production canonical tags use the public HTTPS domain.
 
 If the domain changes, update the three origin variables, redirect the old domain, and resubmit the sitemap. Local code changes do not update Vercel environment settings or register the site with search engines automatically.

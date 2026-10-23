@@ -1,8 +1,9 @@
 import type {Metadata} from "next";
 import type {Vehicle} from "@/types";
+import {canonicalOrigin} from "./origin";
 
 // Keep the public search identity independent of local auth/preview origins.
-export const siteUrl = new URL(process.env.SITE_URL || "https://carxsailor.vercel.app").origin;
+export const siteUrl = new URL(process.env.SITE_URL || canonicalOrigin).origin;
 export const siteName = "CarXSailor";
 export const siteDescription = "Discover cars for sale in Nigeria. Compare prices, condition reports and features, or find a shortlist matched to your budget and priorities with CarXSailor.";
 export const indexingEnabled = process.env.VERCEL_ENV !== "preview";

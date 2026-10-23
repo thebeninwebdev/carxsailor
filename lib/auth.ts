@@ -8,13 +8,17 @@ import {createEmailAuthOptions} from "./email/auth-options";
 import {authDatabase,connectMongoose,connectMongoClient} from "./db";
 import {VendorProfileModel} from "@/models/VendorProfile";
 import {postLoginDestination,safeNext} from "./safe-next";
+import {applicationOrigin,authTrustedOrigins} from "./origin";
 import type {UserRole} from "@/types";
 
 export const auth=betterAuth({
   database:mongodbAdapter(authDatabase),
   ...createEmailAuthOptions(),
   secret:process.env.BETTER_AUTH_SECRET,
-  baseURL:process.env.BETTER_AUTH_URL||process.env.NEXT_PUBLIC_APP_URL,
+  // Keep browser and installed-PWA requests on their own origin. Better Auth
+  // therefore retains its secure, host-only cookie defaults.
+  baseURL:applicationOrigin(),
+  trustedOrigins:authTrustedOrigins(),
   user:{additionalFields:{role:{type:"string",required:false,defaultValue:"BUYER",input:false}}},
   // A verified Google email may join its matching, already-verified local identity.
   // No other provider is trusted and a different email can never be linked implicitly.
